@@ -1,0 +1,7 @@
+Prompt Meeting Minutes:
+"As an expert Public Health Technical Officer specializing in documenting international meetings and bilateral collaborations, please review the attached transcript file (file Name) and generate a comprehensive, structured meeting summary in English. Please ensure the summary captures professional public health terminology, policy alignment between agencies, and actionable insights. Format the output using plain text (ideal for saving directly into a Notepad .txt file) with clear section headers, professional bullet points, and the following structure:
+Meeting Details
+Attendees
+Agenda Items
+Discussions & Decisions
+Action Items
