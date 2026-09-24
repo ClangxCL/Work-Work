@@ -1,9 +1,8 @@
 import os
 
-def generate_meeting_minutes(input_file_path, output_file_path):
+def generate_meeting_minutes(input_file_path, output_file_path, page_number=1):
     """
-    อ่านไฟล์ transcript การประชุมและสร้างโครงสร้างสรุปการประชุม (Meeting Minutes)
-    ในรูปแบบ Plain Text สำหรับบันทึกเป็น .txt
+    อ่านไฟล์ transcript และสร้างรายงานสรุปการประชุมพร้อมระบุเลขหน้าในหัวตาราง
     """
     if not os.path.exists(input_file_path):
         print(f"Error: ไม่พบไฟล์ต้นฉบับที่ '{input_file_path}'")
@@ -13,10 +12,13 @@ def generate_meeting_minutes(input_file_path, output_file_path):
     with open(input_file_path, 'r', encoding='utf-8') as f:
         transcript_content = f.read()
 
-    # จัดรูปแบบโครงสร้างสรุปการประชุมตามโจทย์
+    # จัดรูปแบบโครงสร้างสรุปการประชุม พร้อมใส่เลขหน้าในหัวตาราง
     minutes_template = f"""==================================================
-MEETING MINUTES: INTERNATIONAL PUBLIC HEALTH COLLABORATION
+MEETING MINUTES | PAGE: {page_number:02d}
 ==================================================
+[ Metadata ]
+- Document Type: International Public Health Collaboration Summary
+- Status: Confirmed / Official Record
 
 [ Meeting Details ]
 - Date: [Insert Date]
@@ -51,7 +53,7 @@ MEETING MINUTES: INTERNATIONAL PUBLIC HEALTH COLLABORATION
 - [ ] Action 3: Schedule the next technical follow-up workshop (Responsible: [Name], Deadline: [Date]).
 
 ==================================================
-TRANSCRIPT REFERENCE EXCERPT:
+TRANSCRIPT REFERENCE EXCERPT (Page {page_number}):
 ==================================================
 {transcript_content[:1000]}...
 [Note: Truncated for summary purposes]
@@ -61,11 +63,13 @@ TRANSCRIPT REFERENCE EXCERPT:
     with open(output_file_path, 'w', encoding='utf-8') as f:
         f.write(minutes_template)
 
-    print(f"สร้างรายงานสรุปการประชุมสำเร็จ! บันทึกไฟล์ที่: {output_file_path}")
+    print(f"สร้างรายงานสรุปการประชุม (หน้า {page_number}) สำเร็จ! บันทึกที่: {output_file_path}")
 
 if __name__ == "__main__":
-    # กำหนดชื่อไฟล์ Input (Transcript ของคุณ) และ Output (ไฟล์ .txt สำหรับ Notepad)
-    input_transcript = "meeting_transcript.txt"
-    output_minutes = "public_health_meeting_minutes.txt"
+    # สามารถเปลี่ยนเลขหน้าตรงพารามิเตอร์นี้ได้เลยครับ (เช่น หน้า 1, หน้า 2)
+    current_page = 1 
     
-    generate_meeting_minutes(input_transcript, output_minutes)
+    input_transcript = "meeting_transcript.txt"
+    output_minutes = f"public_health_meeting_minutes_page_{current_page}.txt"
+    
+    generate_meeting_minutes(input_transcript, output_minutes, page_number=current_page)
