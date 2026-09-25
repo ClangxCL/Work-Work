@@ -31,9 +31,9 @@ Section Guidelines
 
 Tone & Constraints
 
-Maintain an objective, formal, and authoritative tone suitable for high-level governmental and international stakeholder review.
-Avoid conversational filler; start directly with the Meeting Details header.
-Ensure zero loss of critical technical, financial, or epidemiological data mentioned in the source transcript.
+- Maintain an objective, formal, and authoritative tone suitable for high-level governmental and international stakeholder review.
+- Avoid conversational filler; start directly with the Meeting Details header.
+- Ensure zero loss of critical technical, financial, or epidemiological data mentioned in the source transcript.
 
 Input Data
 [INSERT TRANSCRIPT OR FILE REFERENCE HERE]
