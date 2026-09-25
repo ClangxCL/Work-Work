@@ -1,4 +1,4 @@
-# Meeting Minutes Engineering Prompt
+# สรุปรายงานการประชุมราชการ ฉบับภาษาไทย
 
 > Engineering Prompt สำหรับสร้าง **รายงานการประชุมจากไฟล์แนบ**  
 > รองรับการนำไปใช้ซ้ำกับ Word, PDF, Transcript, Notes หรือเอกสารประชุมอื่น ๆ  
