@@ -1,4 +1,4 @@
-# Public Health Meeting Summary Prompt
+# Meeting Minutes Engineering Prompt
 
 Role & Expertise
 
