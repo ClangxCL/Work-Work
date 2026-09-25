@@ -811,16 +811,6 @@ PROMPT.md
 
 ---
 
-## License
-
-สามารถเพิ่ม License ตามรูปแบบของ Repository เช่น:
-
-- MIT License
-- Apache-2.0
-- Private / Internal Use
-
----
-
 ## Notes
 
 Prompt นี้ออกแบบให้ **โครงสร้างคงที่ แต่แหล่งเนื้อหาเปลี่ยนได้**
