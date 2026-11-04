@@ -5,8 +5,13 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel)](https://aging-analytics-dashboard.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live_Dashboard-aging--analytics--dashboard.vercel.app-0284c7)](https://aging-analytics-dashboard.vercel.app)
 [![GitHub Branch](https://img.shields.io/badge/Branch-Aging--Data--Analysis-blue?logo=github)](https://github.com/ClangxCL/Work-Work/tree/Aging-Data-Analysis)
+
+🌐 **Live Production URL:** [https://aging-analytics-dashboard.vercel.app](https://aging-analytics-dashboard.vercel.app)  
+🚀 **Vercel Project Dashboard:** [https://vercel.com/aging-dms-info/aging-analytics-dashboard](https://vercel.com/aging-dms-info/aging-analytics-dashboard)  
+📦 **GitHub Repository & Branch:** [https://github.com/ClangxCL/Work-Work/tree/Aging-Data-Analysis](https://github.com/ClangxCL/Work-Work/tree/Aging-Data-Analysis)
 
 ระบบสารสนเทศและแดชบอร์ดวิเคราะห์สถานการณ์และสุขภาพผู้สูงอายุไทย พัฒนาขึ้นโดยอ้างอิงข้อมูลทางการของ **สถาบันเวชศาสตร์สมเด็จพระสังฆราชญาณสังวรเพื่อผู้สูงอายุ กรมการแพทย์ กระทรวงสาธารณสุข**, **ระบบคลังข้อมูลด้านการแพทย์และสุขภาพ (Health Data Center: HDC)**, **กรมการปกครอง (DOPA)**, และ **สำนักงานสภาพัฒนาการเศรษฐกิจและสังคมแห่งชาติ (สศช.)** ครอบคลุมการติดตาม ประเมิน และคาดการณ์โครงสร้างประชากรผู้สูงวัยใน 77 จังหวัด 13 เขตสุขภาพ
 
