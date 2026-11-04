@@ -1,0 +1,25 @@
+{
+  "name": "work-work-aging-data-analysis",
+  "version": "1.0.0",
+  "private": true,
+  "description": "แดชบอร์ดสถานการณ์และสุขภาพผู้สูงอายุไทย (Thai Elderly Health & Clinical Analytics Dashboard 2566–2569) - กรมการแพทย์ กระทรวงสาธารณสุข",
+  "scripts": {
+    "install:all": "cd aging-analytics-dashboard && npm install",
+    "dev": "cd aging-analytics-dashboard && npm run dev",
+    "build": "cd aging-analytics-dashboard && npm run build",
+    "preview": "cd aging-analytics-dashboard && npm run preview"
+  },
+  "keywords": [
+    "thailand",
+    "geriatric",
+    "elderly-health",
+    "moph",
+    "dms",
+    "analytics-dashboard",
+    "react",
+    "typescript",
+    "tailwind"
+  ],
+  "author": "ClangxCL",
+  "license": "MIT"
+}
