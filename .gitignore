@@ -40,3 +40,24 @@ venv/
 # Scratch & temporary
 scratch/
 .system_generated/
+# Agent and AI configs
+.agents/
+.codex/
+.gemini/
+.impeccable/
+.vercel/
+dms-dashboard-repo/
+aging-dashboard-app/
+aging-dashboard/
+health-9d-dashboard/
+extracted_assets/
+*.m4a
+*.mp3
+*.wav
+*.txt
+*.docx
+AI_Powered_Future_of_Care*
+GeriLens_Stakeholder_Analysis.md
+dms_2023.html
+test_*
+??????????*
