@@ -1019,8 +1019,8 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
           {
             title: 'สถาบันเวชศาสตร์สมเด็จพระสังฆราชญาณสังวรเพื่อผู้สูงอายุ',
             dept: 'กรมการแพทย์ กระทรวงสาธารณสุข',
-            url: 'https://agingmed.dms.go.th',
-            displayUrl: 'agingmed.dms.go.th',
+            url: 'https://dmscaretools.dms.go.th',
+            displayUrl: 'dmscaretools.dms.go.th',
             badge: 'รายงานผลการประเมินมาตรฐานคลินิกผู้สูงอายุ',
             badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
             description: 'ฐานข้อมูลสรุปผลการประเมินมาตรฐานคลินิกผู้สูงอายุในโรงพยาบาลสังกัดกระทรวงสาธารณสุข 937 แห่ง ครอบคลุม 5 หมวดเกณฑ์คุณภาพ',

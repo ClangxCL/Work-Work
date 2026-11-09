@@ -93,19 +93,29 @@ export function App() {
 
       {/* Footer */}
       <footer className="bg-slate-900 border-t border-slate-800 text-slate-400 text-xs py-6 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center space-x-2 text-center md:text-left">
-            <Database className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>
-              <strong>แหล่งข้อมูล:</strong> ระบบคลังข้อมูลด้านการแพทย์และสุขภาพ (HDC) กระทรวงสาธารณสุข & ระบบ DMS Care Tools กรมการแพทย์
-            </span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
+            <div className="flex items-center space-x-2">
+              <Database className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                <strong>แหล่งข้อมูล:</strong> ระบบคลังข้อมูลด้านการแพทย์และสุขภาพ (HDC) กระทรวงสาธารณสุข & ระบบ DMS Care Tools กรมการแพทย์
+              </span>
+            </div>
+            <div className="flex items-center space-x-2 text-slate-400 shrink-0">
+              <Layers className="w-3.5 h-3.5 text-blue-400" />
+              <span>ปีงบประมาณ 2566 – 2569</span>
+            </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="flex items-center gap-1 text-slate-400">
-              <Layers className="w-3.5 h-3.5 text-blue-400" /> ปีงบประมาณ 2566 – 2569
-            </span>
-            <span className="text-slate-600">•</span>
-            <span className="text-slate-500">สถาบันเวชศาสตร์สมเด็จพระสังฆราชญาณสังวรเพื่อผู้สูงอายุ</span>
+
+          <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left text-[11px] text-slate-400">
+            <div>
+              <span>รวบรวม วิเคราะห์ และประมวลผลโดย </span>
+              <strong className="text-slate-300 font-semibold">กลุ่มงานสารสนเทศระบบสุขภาพด้านผู้สูงอายุ</strong>{' '}
+              <span>สถาบันเวชศาสตร์สมเด็จพระสังฆราชญาณสังวรเพื่อผู้สูงอายุ กรมการแพทย์ กระทรวงสาธารณสุข</span>
+            </div>
+            <div className="text-slate-500 text-[10px]">
+              DMS Elderly Health Analytics
+            </div>
           </div>
         </div>
       </footer>

@@ -59,12 +59,15 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-slate-500 text-xs">•</span>
                 <span className="text-slate-400 text-xs">กรมการแพทย์ กระทรวงสาธารณสุข</span>
               </div>
-              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                แดชบอร์ดสถานการณ์และสุขภาพผู้สูงอายุไทย 
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-normal border border-blue-500/30">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-white flex flex-wrap items-center gap-2 mt-0.5">
+                <span>Thailand Elderly Health Situation Dashboard</span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-normal border border-blue-500/30">
                   HDC 2566–2569
                 </span>
               </h1>
+              <p className="text-xs sm:text-sm font-medium text-slate-300 mt-0.5">
+                แดชบอร์ดสถานการณ์สุขภาพผู้สูงอายุไทย
+              </p>
             </div>
           </div>
 

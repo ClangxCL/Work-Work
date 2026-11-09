@@ -1031,8 +1031,8 @@ export const Tab2Population: React.FC<Tab2PopulationProps> = ({
           {
             title: 'ระบบคลังข้อมูลด้านการแพทย์และสุขภาพ (Health Data Center: HDC)',
             dept: 'สำนักงานปลัดกระทรวงสาธารณสุข (สป.สธ.)',
-            url: 'https://hdcservice.moph.go.th',
-            displayUrl: 'hdcservice.moph.go.th',
+            url: 'https://hdcdev.moph.go.th/center/public/standard-report-detail/f83d0cd8b830706dab4cd3cb09afa584',
+            displayUrl: 'hdcdev.moph.go.th',
             badge: 'ฐานข้อมูลประชากรรายเขต/รายจังหวัด',
             badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
             description: 'สถิติจำนวนประชากรและสัดส่วนผู้สูงอายุ 60 ปีขึ้นไป ปี 2566–2569 ครอบคลุม 12 เขตสุขภาพ 76 จังหวัด และจำแนกตามกลุ่มอายุย่อย',
