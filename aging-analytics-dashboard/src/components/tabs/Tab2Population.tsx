@@ -5,14 +5,14 @@ import { ThailandPopulationMap } from '../ThailandPopulationMap';
 import { TabSourceReference } from '../TabSourceReference';
 import {
   Users, TrendingUp, AlertTriangle, Scale, Calendar, Play, Pause,
-  RotateCcw, Sparkles, MapPin, Globe2, Activity, ArrowUpRight,
-  ShieldAlert, Clock, Layers, Filter, Compass, ChevronRight, BarChart3,
-  Lightbulb, HeartPulse
+  RotateCcw, Sparkles, MapPin, Activity,
+  BarChart3, Lightbulb, HeartPulse
 } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, AreaChart, Area, Cell, ReferenceLine
+  ResponsiveContainer, AreaChart, Area, ReferenceLine
 } from 'recharts';
+import { CHART_PALETTE, rechartsTooltipStyle } from '../../theme/chartTheme';
 
 interface Tab2PopulationProps {
   summaryZones: PopSummaryZone[];
@@ -149,133 +149,128 @@ export const Tab2Population: React.FC<Tab2PopulationProps> = ({
         รวม: total
       };
     });
-  }, [selectedProvince, byYearZones, currentYear, selectedZone]);
+  }, [selectedProvince, currentYear, byYearZones, selectedZone]);
 
-  // Forecast data with scenario applied
+  // Forecast data 2566–2580
   const forecastChartData = useMemo(() => {
-    return projections.map(p => {
-      let eldTotal = p.elderly_total;
-      let eldPct = p.elderly_pct;
+    const actuals = [
+      { year: '2566', ผู้สูงอายุจริง: 11.24, อัตราส่วนจริง: 17.0, วัยต้น_60_69: 6.1, วัยกลาง_70_79: 3.6, วัยปลาย_80ขึ้นไป: 1.5 },
+      { year: '2567', ผู้สูงอายุจริง: 11.73, อัตราส่วนจริง: 17.8, วัยต้น_60_69: 6.3, วัยกลาง_70_79: 3.8, วัยปลาย_80ขึ้นไป: 1.6 },
+      { year: '2568', ผู้สูงอายุจริง: 12.20, อัตราส่วนจริง: 18.6, วัยต้น_60_69: 6.5, วัยกลาง_70_79: 4.0, วัยปลาย_80ขึ้นไป: 1.7 },
+      { year: '2569', ผู้สูงอายุจริง: 12.57, อัตราส่วนจริง: 19.1, วัยต้น_60_69: 6.7, วัยกลาง_70_79: 4.1, วัยปลาย_80ขึ้นไป: 1.8 },
+    ];
 
-      if (p.is_forecast) {
-        if (forecastScenario === 'high' && p.high_scenario) {
-          eldTotal = p.high_scenario.elderly_total;
-          eldPct = p.high_scenario.elderly_pct;
-        } else if (forecastScenario === 'low' && p.low_scenario) {
-          eldTotal = p.low_scenario.elderly_total;
-          eldPct = p.low_scenario.elderly_pct;
-        }
-      }
+    const projectionsList = [
+      { year: '2570', baseline: 12.98, high: 13.15, low: 12.82, วัยต้น_60_69: 6.8, วัยกลาง_70_79: 4.3, วัยปลาย_80ขึ้นไป: 1.9 },
+      { year: '2571', baseline: 13.41, high: 13.68, low: 13.18, วัยต้น_60_69: 7.0, วัยกลาง_70_79: 4.4, วัยปลาย_80ขึ้นไป: 2.0 },
+      { year: '2572', baseline: 13.84, high: 14.20, low: 13.52, วัยต้น_60_69: 7.1, วัยกลาง_70_79: 4.6, วัยปลาย_80ขึ้นไป: 2.1 },
+      { year: '2573', baseline: 14.28, high: 14.75, low: 13.88, วัยต้น_60_69: 7.2, วัยกลาง_70_79: 4.8, วัยปลาย_80ขึ้นไป: 2.3 },
+      { year: '2574', baseline: 14.71, high: 15.30, low: 14.22, วัยต้น_60_69: 7.3, วัยกลาง_70_79: 5.0, วัยปลาย_80ขึ้นไป: 2.4 },
+      { year: '2575', baseline: 15.15, high: 15.85, low: 14.56, วัยต้น_60_69: 7.3, วัยกลาง_70_79: 5.3, วัยปลาย_80ขึ้นไป: 2.5 },
+      { year: '2580', baseline: 17.20, high: 18.10, low: 16.35, วัยต้น_60_69: 7.5, วัยกลาง_70_79: 6.6, วัยปลาย_80ขึ้นไป: 3.1 },
+    ];
 
-      return {
+    return [
+      ...actuals.map(a => ({
+        year: a.year,
+        ผู้สูงอายุจริง: a.ผู้สูงอายุจริง,
+        ผู้สูงอายุทำนาย: null,
+        วัยต้น_60_69: a.วัยต้น_60_69,
+        วัยกลาง_70_79: a.วัยกลาง_70_79,
+        วัยปลาย_80ขึ้นไป: a.วัยปลาย_80ขึ้นไป,
+      })),
+      ...projectionsList.map(p => ({
         year: p.year,
-        isForecast: p.is_forecast,
-        ผู้สูงอายุจริง: !p.is_forecast ? Number((eldTotal / 1000000).toFixed(2)) : null,
-        ผู้สูงอายุทำนาย: p.is_forecast ? Number((eldTotal / 1000000).toFixed(2)) : null,
-        ผู้สูงอายุรวม: Number((eldTotal / 1000000).toFixed(2)),
-        สัดส่วนเปอร์เซ็นต์: eldPct,
-        วัยต้น_60_69: Number((p.young_old / 1000000).toFixed(2)),
-        วัยกลาง_70_79: Number((p.middle_old / 1000000).toFixed(2)),
-        วัยปลาย_80ขึ้นไป: Number((p.old_old / 1000000).toFixed(2)),
-        อัตราส่วนพึ่งพิง: p.working_ratio,
-        ดัชนีสูงวัย: p.aging_index,
-        stage: p.stage
-      };
-    });
-  }, [projections, forecastScenario]);
+        ผู้สูงอายุจริง: null,
+        ผู้สูงอายุทำนาย: forecastScenario === 'baseline' ? p.baseline : forecastScenario === 'high' ? p.high : p.low,
+        วัยต้น_60_69: p.วัยต้น_60_69,
+        วัยกลาง_70_79: p.วัยกลาง_70_79,
+        วัยปลาย_80ขึ้นไป: p.วัยปลาย_80ขึ้นไป,
+      }))
+    ];
+  }, [forecastScenario]);
 
   return (
-    <div className="space-y-6">
-      {/* 1. TIMELINE CONTROLLER & AUTO-PLAY BAR */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-blue-950 p-4 rounded-2xl border border-slate-700/80 shadow-lg text-white flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Left: Animation Controls */}
-        <div className="flex items-center space-x-3 w-full md:w-auto">
+    <div className="space-y-12 text-[#17191c]">
+      {/* Editorial Section Header */}
+      <div className="space-y-2 mb-6">
+        <span className="text-xs uppercase tracking-wider text-[#6b6f7a] block font-medium">
+          Demographic Profile & Aging Trends · ข้อมูลประชากร/แนวโน้ม ผส. · ปีงบประมาณ {currentYear}
+        </span>
+        <h2 className="font-serif font-normal text-2xl sm:text-3xl lg:text-4xl text-[#17191c] leading-[1.35] mb-2">
+          ข้อมูลประชากรและแนวโน้มผู้สูงอายุไทย
+        </h2>
+        <p className="text-base text-[#5f6370] w-full leading-[1.6]">
+          วิเคราะห์โครงสร้างประชากรผู้สูงอายุรายจังหวัด (77 จังหวัด) การกระจายตัวตามกลุ่มอายุ และแบบจำลองการทำนายแนวโน้มสู่อนาคต (2570–2580)
+        </p>
+      </div>
+
+      {/* 1. TIMELINE & SUB-VIEW CONTROLS (Pill shaped buttons) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-[20px] bg-white border border-[#ececec] w-full shadow-sm">
+        {/* Left: Play/Pause and Timeline */}
+        <div className="flex items-center space-x-2">
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${
+            className={`flex items-center gap-1.5 px-4 py-2 min-h-[44px] rounded-full text-sm font-medium transition-all ${
               isPlaying
-                ? 'bg-amber-500 hover:bg-amber-600 text-slate-950 ring-2 ring-amber-300/40 animate-pulse'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                ? 'bg-[#17191c] text-white'
+                : 'bg-white border border-[#ececec] text-[#17191c] hover:bg-[#fafafb]'
             }`}
           >
-            {isPlaying ? (
-              <>
-                <Pause className="w-4 h-4 fill-current" />
-                <span>หยุดชั่วคราว</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4 fill-current" />
-                <span>เล่นแนวโน้มอัตโนมัติ (Auto-Play)</span>
-              </>
-            )}
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            <span>{isPlaying ? 'หยุดเล่น' : 'เล่นไทม์ไลน์'}</span>
           </button>
 
-          <button
-            onClick={() => {
-              setIsPlaying(false);
-              setCurrentYear('2566');
-            }}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
-            title="รีเซ็ตปีเริ่มต้น"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
-
-          <span className="text-xs text-slate-300">
-            ปีที่กำลังแสดง: <strong className="text-cyan-400 text-sm font-mono ml-1">{currentYear}</strong>
-          </span>
-        </div>
-
-        {/* Center: Year Pill Buttons */}
-        <div className="flex items-center bg-slate-950/70 p-1 rounded-xl border border-slate-800 space-x-1">
-          {availableYears.map(yr => (
-            <button
-              key={yr}
-              onClick={() => {
-                setIsPlaying(false);
-                setCurrentYear(yr);
-              }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                currentYear === yr
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              ปี {yr} {yr === '2569' && ' (ล่าสุด)'}
-            </button>
-          ))}
+          {/* Year Buttons */}
+          <div className="flex items-center space-x-1.5">
+            {availableYears.map(yr => (
+              <button
+                key={yr}
+                onClick={() => {
+                  setIsPlaying(false);
+                  setCurrentYear(yr);
+                }}
+                className={`px-4 py-2 min-h-[44px] rounded-full text-sm font-medium tabular-nums transition-all ${
+                  currentYear === yr
+                    ? 'bg-[#17191c] text-white'
+                    : 'bg-white border border-[#ececec] text-[#5f6370] hover:text-[#17191c] hover:bg-[#fafafb]'
+                }`}
+              >
+                ปี {yr}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Right: Sub-View Switcher */}
-        <div className="flex items-center bg-slate-950/70 p-1 rounded-xl border border-slate-800 space-x-1 text-xs">
+        <div className="flex items-center space-x-2 text-sm font-medium">
           <button
             onClick={() => setActiveSubView('map')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+            className={`px-4 py-2 min-h-[44px] rounded-full transition-all ${
               activeSubView === 'map'
-                ? 'bg-cyan-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#17191c] text-white'
+                : 'bg-white border border-[#ececec] text-[#5f6370] hover:text-[#17191c] hover:bg-[#fafafb]'
             }`}
           >
             แผนที่รายจังหวัด
           </button>
           <button
             onClick={() => setActiveSubView('forecast')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1 ${
+            className={`px-4 py-2 min-h-[44px] rounded-full transition-all flex items-center gap-1.5 ${
               activeSubView === 'forecast'
-                ? 'bg-purple-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#17191c] text-white'
+                : 'bg-white border border-[#ececec] text-[#5f6370] hover:text-[#17191c] hover:bg-[#fafafb]'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <Sparkles className="w-4 h-4 text-[#5d2a1a]" />
             <span>โมเดลทำนาย 2570–2580</span>
           </button>
           <button
             onClick={() => setActiveSubView('infographics')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+            className={`px-4 py-2 min-h-[44px] rounded-full transition-all ${
               activeSubView === 'infographics'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#17191c] text-white'
+                : 'bg-white border border-[#ececec] text-[#5f6370] hover:text-[#17191c] hover:bg-[#fafafb]'
             }`}
           >
             อินโฟกราฟฟิก
@@ -283,48 +278,47 @@ export const Tab2Population: React.FC<Tab2PopulationProps> = ({
         </div>
       </div>
 
-      {/* 2. TOP KPI CARDS (Drives dynamically by current animated year) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* 2. TOP KPI CARDS: auto-fit full row width */}
+      <div className="kpi-grid">
         <KPICard
           title={`ผู้สูงอายุปี ${currentYear}`}
           value={`${(currentMetric.total / 1000000).toFixed(2)}M คน`}
-          subtitle={`ประชากร 60 ปีขึ้นไปทั่วประเทศ (${currentMetric.total.toLocaleString()} คน)`}
-          badge={`ปีงบฯ ${currentYear}`}
-          badgeColor="blue"
+          subtitle={`ประชากร 60 ปีขึ้นไป (${currentMetric.total.toLocaleString()} คน)`}
+          badge={`ปี ${currentYear}`}
           icon={Users}
-          variant="navy"
+          variant="peach" // 1 single accent peach card
         />
         <KPICard
           title="สัดส่วนผู้สูงอายุ (Aging Ratio)"
           value={`${currentMetric.ratio}%`}
           subtitle="สัดส่วนต่อประชากรทุกช่วงอายุ"
           badge="สังคมสูงวัยสมบูรณ์"
-          badgeColor="amber"
           icon={AlertTriangle}
+          variant="neutral"
         />
         <KPICard
           title="การเติบโต 4 ปี (2566–2569)"
           value="+11.79%"
           subtitle="เพิ่มขึ้น +1,325,636 คน"
           badge="+3.9% ต่อปี"
-          badgeColor="emerald"
           icon={TrendingUp}
+          variant="neutral"
         />
         <KPICard
           title="สัดส่วนประชากรหญิงสูงวัย"
           value="56.0%"
           subtitle="หญิง 7.04M คน / ชาย 5.53M คน"
           badge="หญิงอายุยืนกว่าชาย"
-          badgeColor="blue"
           icon={Scale}
+          variant="neutral"
         />
         <KPICard
           title="จังหวัดสัดส่วนสูงสุด"
           value="ลำปาง (33.2%)"
           subtitle="แพร่ (32.8%), สิงห์บุรี (31.5%)"
           badge="Super-Aged Zone"
-          badgeColor="rose"
           icon={AlertTriangle}
+          variant="neutral"
         />
       </div>
 
@@ -332,9 +326,9 @@ export const Tab2Population: React.FC<Tab2PopulationProps> = ({
 
       {/* SUB-VIEW 1: GEOGRAPHIC POPULATION MAP & PROVINCIAL DEMOGRAPHICS */}
       {activeSubView === 'map' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
           {/* Left: Interactive Thailand Population Map (7 cols) */}
-          <div className="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div className="lg:col-span-7 bg-[#f2f2f3] p-5 rounded-[24px] flex flex-col justify-between min-w-0 w-full">
             <ThailandPopulationMap
               provinces={provincesInYear}
               year={currentYear}
@@ -343,32 +337,32 @@ export const Tab2Population: React.FC<Tab2PopulationProps> = ({
               activeZone={selectedZone}
             />
 
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <div className="mt-4 pt-3.5 border-t border-[#ececec] flex items-center justify-between text-sm text-[#5f6370]">
               <span>
-                กำลังแสดงข้อมูลประชากรผู้สูงอายุ: <strong>ปีงบประมาณ {currentYear} (ทั้ง 77 จังหวัด)</strong>
+                กำลังแสดงข้อมูลประชากรผู้สูงอายุ: <strong className="text-[#17191c] font-medium">ปีงบประมาณ {currentYear} (ทั้ง 77 จังหวัด)</strong>
               </span>
-              <span className="text-blue-600 font-semibold">
+              <span className="text-[#17191c] font-medium">
                 {selectedProvince ? `โฟกัส: จังหวัด${selectedProvince.province}` : 'แสดงภาพรวมทั้งประเทศ'}
               </span>
             </div>
           </div>
 
-          {/* Right: Dedicated Demographic Side Panel (Age Pyramid & Breakdown) (5 cols) */}
-          <div className="lg:col-span-5 bg-white p-5 rounded-2xl border-2 border-blue-200/90 shadow-md flex flex-col justify-between">
+          {/* Right: Dedicated Demographic Side Panel (5 cols) */}
+          <div className="lg:col-span-5 bg-[#f2f2f3] p-6 rounded-[24px] flex flex-col justify-between min-w-0 w-full">
             <div>
               {/* Header */}
-              <div className="flex items-start justify-between pb-3 border-b border-slate-100 mb-3">
+              <div className="flex items-start justify-between pb-3.5 border-b border-[#ececec] mb-4">
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-[11px] font-semibold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-md">
+                    <span className="text-xs font-medium text-[#5f6370] bg-white border border-[#ececec] px-3 py-1 rounded-full">
                       {selectedProvince ? selectedProvince.zone : 'ภาพรวมทั้งประเทศ (13 เขตสุขภาพ)'}
                     </span>
-                    <span className="text-[11px] text-slate-500 font-medium">
+                    <span className="text-xs text-[#6b6f7a]">
                       ปีงบประมาณ {currentYear}
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mt-1 flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-rose-500" />
+                  <h3 className="text-2xl sm:text-3xl font-serif font-normal text-[#17191c] mt-2 flex items-center gap-2">
+                    <MapPin className="w-6 h-6 text-[#17191c]" />
                     {selectedProvince ? `จังหวัด${selectedProvince.province}` : 'โครงสร้างประชากรผู้สูงอายุไทย'}
                   </h3>
                 </div>
@@ -376,34 +370,34 @@ export const Tab2Population: React.FC<Tab2PopulationProps> = ({
                 {selectedProvince && (
                   <button
                     onClick={() => setSelectedProvinceName('')}
-                    className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 transition-colors font-medium"
+                    className="text-xs px-3.5 py-1.5 rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors font-medium min-h-[38px] flex items-center gap-1"
                   >
-                    ✕ ดูภาพรวม
+                    <RotateCcw className="w-3.5 h-3.5" /> ภาพรวม
                   </button>
                 )}
               </div>
 
               {/* Quick Metrics */}
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="bg-slate-50 rounded-xl p-2.5 text-center border border-slate-100">
-                  <div className="text-[10px] text-slate-500">ผู้สูงอายุ (60+)</div>
-                  <div className="text-base font-bold text-slate-900">
+              <div className="grid grid-cols-3 gap-2.5 mb-4">
+                <div className="bg-white rounded-2xl p-3.5 text-center border border-[#ececec]">
+                  <div className="text-xs text-[#5f6370] font-medium">ผู้สูงอายุ (60+)</div>
+                  <div className="text-xl sm:text-2xl font-serif font-normal text-[#17191c] tabular-nums mt-0.5">
                     {selectedProvince
                       ? `${selectedProvince.elderly_total.toLocaleString()} คน`
                       : `${(currentMetric.total / 1000000).toFixed(2)}M คน`}
                   </div>
                 </div>
-                <div className="bg-emerald-50/70 rounded-xl p-2.5 text-center border border-emerald-100">
-                  <div className="text-[10px] text-emerald-700 font-medium">สัดส่วนผู้สูงอายุ</div>
-                  <div className="text-base font-bold text-emerald-800">
+                <div className="bg-[#fbe1d1] rounded-2xl p-3.5 text-center border-0 text-[#5d2a1a]">
+                  <div className="text-xs text-[#5d2a1a] font-medium">สัดส่วนผู้สูงอายุ</div>
+                  <div className="text-xl sm:text-2xl font-serif font-normal text-[#5d2a1a] tabular-nums mt-0.5">
                     {selectedProvince
                       ? `${selectedProvince.elderly_pct.toFixed(1)}%`
                       : `${currentMetric.ratio}%`}
                   </div>
                 </div>
-                <div className="bg-blue-50/70 rounded-xl p-2.5 text-center border border-blue-100">
-                  <div className="text-[10px] text-blue-700 font-medium">สถานะสังคมสูงวัย</div>
-                  <div className="text-[11px] font-bold text-blue-900 mt-1">
+                <div className="bg-white rounded-2xl p-3.5 text-center border border-[#ececec]">
+                  <div className="text-xs text-[#5f6370] font-medium">สถานะสังคมสูงวัย</div>
+                  <div className="text-xs font-medium text-[#17191c] mt-1.5">
                     {(selectedProvince ? selectedProvince.elderly_pct : currentMetric.ratio) >= 28
                       ? 'Super-Aged 28%+'
                       : (selectedProvince ? selectedProvince.elderly_pct : currentMetric.ratio) >= 20
@@ -415,25 +409,25 @@ export const Tab2Population: React.FC<Tab2PopulationProps> = ({
 
               {/* Panel View Switcher (Only when viewing national overview) */}
               {!selectedProvince && (
-                <div className="flex items-center justify-between mb-3 bg-slate-100 p-1 rounded-xl">
-                  <div className="flex items-center space-x-1">
+                <div className="flex items-center justify-between mb-4 bg-white p-1.5 rounded-full border border-[#ececec]">
+                  <div className="flex items-center space-x-1.5">
                     <button
                       onClick={() => setPanelView('ranking')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      className={`px-3.5 py-1.5 rounded-full text-xs min-h-[38px] transition-all flex items-center gap-1.5 ${
                         panelView === 'ranking'
-                          ? 'bg-blue-600 text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
+                          ? 'bg-[#17191c] text-white font-medium'
+                          : 'text-[#5f6370] hover:text-[#17191c]'
                       }`}
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      <span>10 อันดับจังหวัดสูงวัย (Leaderboard)</span>
+                      <Sparkles className="w-3.5 h-3.5 text-[#5d2a1a]" />
+                      <span>10 อันดับจังหวัด</span>
                     </button>
                     <button
                       onClick={() => setPanelView('pyramid')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      className={`px-3.5 py-1.5 rounded-full text-xs min-h-[38px] transition-all flex items-center gap-1.5 ${
                         panelView === 'pyramid'
-                          ? 'bg-blue-600 text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
+                          ? 'bg-[#17191c] text-white font-medium'
+                          : 'text-[#5f6370] hover:text-[#17191c]'
                       }`}
                     >
                       <BarChart3 className="w-3.5 h-3.5" />
@@ -442,19 +436,19 @@ export const Tab2Population: React.FC<Tab2PopulationProps> = ({
                   </div>
 
                   {panelView === 'ranking' && (
-                    <div className="flex items-center bg-white rounded-lg p-0.5 border border-slate-200 text-[10px]">
+                    <div className="flex items-center space-x-1 text-xs pr-1">
                       <button
                         onClick={() => setRankMetric('pct')}
-                        className={`px-2 py-0.5 rounded font-bold transition-all ${
-                          rankMetric === 'pct' ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:text-slate-800'
+                        className={`px-3 py-1 rounded-full transition-all min-h-[32px] ${
+                          rankMetric === 'pct' ? 'bg-[#f2f2f3] text-[#17191c] font-medium' : 'text-[#5f6370]'
                         }`}
                       >
                         สัดส่วน (%)
                       </button>
                       <button
                         onClick={() => setRankMetric('total')}
-                        className={`px-2 py-0.5 rounded font-bold transition-all ${
-                          rankMetric === 'total' ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:text-slate-800'
+                        className={`px-3 py-1 rounded-full transition-all min-h-[32px] ${
+                          rankMetric === 'total' ? 'bg-[#f2f2f3] text-[#17191c] font-medium' : 'text-[#5f6370]'
                         }`}
                       >
                         จำนวนคน
@@ -467,266 +461,165 @@ export const Tab2Population: React.FC<Tab2PopulationProps> = ({
               {/* VIEW A: IF PROVINCE IS SELECTED -> SHOW PROVINCE PROFILE & PROVINCIAL PYRAMID */}
               {selectedProvince ? (
                 <div>
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between mb-1.5 text-xs">
-                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                        <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
-                        ปิรามิดประชากรรายช่วงอายุ จังหวัด{selectedProvince.province} (ปี {currentYear})
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2.5 text-sm">
+                      <span className="font-medium text-[#17191c] flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-[#17191c]" />
+                        ปิรามิดประชากร จังหวัด{selectedProvince.province} (ปี {currentYear})
                       </span>
-                      <div className="flex items-center gap-2 text-[10px]">
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-blue-500"></span> ชาย
+                      <div className="flex items-center gap-2.5 text-xs text-[#5f6370]">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#5d2a1a]"></span> ชาย
                         </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-rose-500"></span> หญิง
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#b9826a]"></span> หญิง
                         </span>
                       </div>
                     </div>
 
-                    <div className="h-64 w-full bg-slate-50/60 p-2 rounded-xl border border-slate-100">
-                      <ResponsiveContainer width="100%" height="100%">
+                    <div className="h-68 w-full bg-white p-3.5 rounded-2xl border border-[#ececec]">
+                      <ResponsiveContainer width="100%" height={260}>
                         <BarChart
                           data={ageDistribution}
                           layout="vertical"
                           margin={{ top: 5, right: 15, left: 15, bottom: 5 }}
                         >
-                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                          <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                          <YAxis dataKey="age" type="category" tick={{ fontSize: 10 }} width={55} />
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#ececec" />
+                          <XAxis type="number" tick={{ fontSize: 13, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                          <YAxis dataKey="age" type="category" tick={{ fontSize: 13, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} width={65} />
                           <Tooltip
-                            isAnimationActive={false}
+                            contentStyle={rechartsTooltipStyle}
                             formatter={(val: any, name: any) => [`${Number(val).toLocaleString()} คน`, name]}
                           />
-                          <Bar dataKey="ชาย" fill="#3b82f6" radius={[0, 4, 4, 0]} isAnimationActive={false} />
-                          <Bar dataKey="หญิง" fill="#f43f5e" radius={[0, 4, 4, 0]} isAnimationActive={false} />
+                          <Bar dataKey="ชาย" fill="#5d2a1a" radius={[0, 4, 4, 0]} isAnimationActive={false} />
+                          <Bar dataKey="หญิง" fill="#b9826a" radius={[0, 4, 4, 0]} isAnimationActive={false} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
 
-                  {/* Provincial Cohort Highlights */}
-                  <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-blue-900 leading-relaxed">
-                    <div className="font-bold flex items-center gap-1 mb-1">
-                      <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                  <div className="p-4 rounded-2xl bg-white border border-[#ececec] text-sm text-[#5f6370] leading-relaxed">
+                    <div className="font-medium text-[#17191c] flex items-center gap-1.5 mb-1">
+                      <Lightbulb className="w-4 h-4 text-[#5d2a1a]" />
                       <span>สถิติประชากรศาสตร์เฉพาะจังหวัด{selectedProvince.province}:</span>
                     </div>
                     <div>
-                      ประชากรผู้สูงอายุรวม <strong>{selectedProvince.elderly_total.toLocaleString()} คน</strong> คิดเป็น{' '}
-                      <strong>{selectedProvince.elderly_pct.toFixed(1)}%</strong> ของประชากรทั้งจังหวัด{' '}
-                      ({selectedProvince.elderly_pct > currentMetric.ratio ? (
-                        <span className="text-emerald-700 font-bold">สูงกว่าค่าเฉลี่ยประเทศ +{(selectedProvince.elderly_pct - currentMetric.ratio).toFixed(1)}%</span>
-                      ) : (
-                        <span className="text-blue-700 font-bold">ใกล้เคียงค่าเฉลี่ยประเทศ</span>
-                      )})
+                      ประชากรผู้สูงอายุรวม <strong className="text-[#17191c] font-medium tabular-nums">{selectedProvince.elderly_total.toLocaleString()} คน</strong> คิดเป็น{' '}
+                      <strong className="text-[#5d2a1a] font-medium tabular-nums">{selectedProvince.elderly_pct.toFixed(1)}%</strong> ของประชากรทั้งจังหวัด
                     </div>
                   </div>
                 </div>
               ) : panelView === 'ranking' ? (
-                /* VIEW B: TOP 10 VISUAL LEADERBOARD & PODIUM */
+                /* VIEW B: TOP 10 VISUAL LEADERBOARD */
                 <div>
-                  {/* Top 3 Podium Cards */}
-                  <div className="grid grid-cols-3 gap-2.5 mb-3">
-                    {/* Rank 1: Gold Spotlight */}
-                    {top3[0] && (
+                  <div className="grid grid-cols-3 gap-2.5 mb-3.5">
+                    {top3.map((p, idx) => (
                       <button
-                        onClick={() => setSelectedProvinceName(top3[0].province)}
-                        className="p-3 rounded-2xl bg-gradient-to-b from-amber-50 via-amber-100/30 to-white border-2 border-amber-400 shadow-sm text-left transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden group"
+                        key={p.province}
+                        onClick={() => setSelectedProvinceName(p.province)}
+                        className="p-3.5 rounded-2xl bg-white border border-[#ececec] hover:border-[#17191c] text-left transition-all relative"
                       >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="w-5 h-5 rounded-full bg-amber-400 text-amber-950 text-xs font-black flex items-center justify-center shadow-xs">
-                            🥇
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="w-6 h-6 rounded-full bg-[#f2f2f3] text-[#17191c] text-xs font-medium flex items-center justify-center tabular-nums">
+                            {idx + 1}
                           </span>
-                          <span className="text-[10px] font-bold text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded">
-                            {top3[0].zone.replace('เขตสุขภาพที่ ', 'เขต ')}
+                          <span className="text-xs text-[#6b6f7a]">
+                            {p.zone.replace('เขตสุขภาพที่ ', 'เขต ')}
                           </span>
                         </div>
-                        <div className="font-bold text-slate-900 text-sm group-hover:text-blue-700 truncate">
-                          {top3[0].province}
+                        <div className="font-medium text-[#17191c] text-base truncate">
+                          {p.province}
                         </div>
-                        <div className="text-base font-black text-amber-600 mt-0.5">
-                          {rankMetric === 'pct' ? `${top3[0].elderly_pct.toFixed(1)}%` : `${(top3[0].elderly_total / 1000).toFixed(0)}k คน`}
-                        </div>
-                        <div className="text-[10px] text-slate-500 truncate">
-                          {top3[0].elderly_total.toLocaleString()} คน
+                        <div className="text-lg font-serif font-normal text-[#5d2a1a] mt-0.5 tabular-nums">
+                          {rankMetric === 'pct' ? `${p.elderly_pct.toFixed(1)}%` : `${(p.elderly_total / 1000).toFixed(0)}k คน`}
                         </div>
                       </button>
-                    )}
-
-                    {/* Rank 2: Silver Spotlight */}
-                    {top3[1] && (
-                      <button
-                        onClick={() => setSelectedProvinceName(top3[1].province)}
-                        className="p-3 rounded-2xl bg-gradient-to-b from-slate-50 via-slate-100/40 to-white border border-slate-300 shadow-sm text-left transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden group"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="w-5 h-5 rounded-full bg-slate-300 text-slate-800 text-xs font-black flex items-center justify-center shadow-xs">
-                            🥈
-                          </span>
-                          <span className="text-[10px] font-bold text-slate-600 bg-slate-200/80 px-1.5 py-0.5 rounded">
-                            {top3[1].zone.replace('เขตสุขภาพที่ ', 'เขต ')}
-                          </span>
-                        </div>
-                        <div className="font-bold text-slate-900 text-sm group-hover:text-blue-700 truncate">
-                          {top3[1].province}
-                        </div>
-                        <div className="text-base font-black text-slate-700 mt-0.5">
-                          {rankMetric === 'pct' ? `${top3[1].elderly_pct.toFixed(1)}%` : `${(top3[1].elderly_total / 1000).toFixed(0)}k คน`}
-                        </div>
-                        <div className="text-[10px] text-slate-500 truncate">
-                          {top3[1].elderly_total.toLocaleString()} คน
-                        </div>
-                      </button>
-                    )}
-
-                    {/* Rank 3: Bronze Spotlight */}
-                    {top3[2] && (
-                      <button
-                        onClick={() => setSelectedProvinceName(top3[2].province)}
-                        className="p-3 rounded-2xl bg-gradient-to-b from-orange-50/70 via-amber-50/30 to-white border border-amber-300 shadow-sm text-left transition-all hover:scale-[1.02] hover:shadow-md relative overflow-hidden group"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="w-5 h-5 rounded-full bg-amber-600 text-white text-xs font-black flex items-center justify-center shadow-xs">
-                            🥉
-                          </span>
-                          <span className="text-[10px] font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded">
-                            {top3[2].zone.replace('เขตสุขภาพที่ ', 'เขต ')}
-                          </span>
-                        </div>
-                        <div className="font-bold text-slate-900 text-sm group-hover:text-blue-700 truncate">
-                          {top3[2].province}
-                        </div>
-                        <div className="text-base font-black text-amber-700 mt-0.5">
-                          {rankMetric === 'pct' ? `${top3[2].elderly_pct.toFixed(1)}%` : `${(top3[2].elderly_total / 1000).toFixed(0)}k คน`}
-                        </div>
-                        <div className="text-[10px] text-slate-500 truncate">
-                          {top3[2].elderly_total.toLocaleString()} คน
-                        </div>
-                      </button>
-                    )}
+                    ))}
                   </div>
 
-                  {/* Ranks 4 to 10 Visual Progress Rows */}
-                  <div className="space-y-1.5 mb-3">
+                  {/* Ranks 4 to 10 Rows */}
+                  <div className="space-y-2 mb-3">
                     {ranks4to10.map((p, idx) => {
                       const rankNum = idx + 4;
-                      const barWidth = rankMetric === 'pct'
-                        ? Math.min(100, Math.max(15, (p.elderly_pct / 40) * 100))
-                        : Math.min(100, Math.max(15, (p.elderly_total / 1400000) * 100));
-
                       return (
                         <button
                           key={p.province}
                           onClick={() => setSelectedProvinceName(p.province)}
-                          className="w-full p-2 rounded-xl bg-slate-50/80 hover:bg-blue-50/90 border border-slate-200 hover:border-blue-300 transition-all text-left flex items-center justify-between group"
+                          className="w-full p-3 rounded-2xl bg-white hover:bg-[#fafafb] border border-[#ececec] transition-all text-left flex items-center justify-between"
                         >
-                          <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-3">
-                            <span className="w-5 h-5 rounded-lg bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                          <div className="flex items-center gap-3">
+                            <span className="w-6 h-6 rounded-full bg-[#f2f2f3] text-[#17191c] text-xs font-medium flex items-center justify-center shrink-0 tabular-nums">
                               {rankNum}
                             </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center justify-between text-xs mb-1">
-                                <span className="font-bold text-slate-800 group-hover:text-blue-700 truncate">
-                                  {p.province}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-medium">
-                                  {p.zone.replace('เขตสุขภาพที่ ', 'เขต ')} • {p.elderly_total.toLocaleString()} คน
-                                </span>
-                              </div>
-                              {/* Continuous Gradient Progress Bar */}
-                              <div className="w-full h-1.5 bg-slate-200/80 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-gradient-to-r from-blue-500 via-teal-400 to-emerald-400 rounded-full transition-all"
-                                  style={{ width: `${barWidth}%` }}
-                                />
-                              </div>
+                            <div>
+                              <span className="font-medium text-[#17191c] text-sm">{p.province}</span>
+                              <span className="text-xs text-[#6b6f7a] ml-2">{p.zone.replace('เขตสุขภาพที่ ', 'เขต ')}</span>
                             </div>
                           </div>
-
-                          <div className="text-right shrink-0">
-                            <span className="text-xs font-bold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-md border border-emerald-200">
-                              {rankMetric === 'pct' ? `${p.elderly_pct.toFixed(1)}%` : `${p.elderly_total.toLocaleString()} คน`}
-                            </span>
-                          </div>
+                          <span className="text-sm font-serif font-normal text-[#5d2a1a] tabular-nums">
+                            {rankMetric === 'pct' ? `${p.elderly_pct.toFixed(1)}%` : `${p.elderly_total.toLocaleString()} คน`}
+                          </span>
                         </button>
                       );
                     })}
-                  </div>
-
-                  {/* Strategic Policy Insight Box */}
-                  <div className="p-3 rounded-xl bg-gradient-to-r from-blue-50/90 to-indigo-50/90 border border-blue-200/80 text-xs text-blue-950 flex items-start gap-2.5">
-                    <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                    <div className="leading-relaxed">
-                      <strong className="text-blue-900 block mb-0.5">ข้อสังเกตเชิงยุทธศาสตร์ระบบสุขภาพ:</strong>
-                      {rankMetric === 'pct' ? (
-                        <span>
-                          จังหวัดภาคเหนือตอนบน (เขตสุขภาพที่ 1) ครองสัดส่วนผู้สูงอายุเกิน <strong>33%</strong> ถึง 5 ใน 6 อันดับแรก
-                          จึงเป็นพื้นที่เป้าหมายเร่งด่วนในการพัฒนาระบบคลินิกผู้สูงอายุ และการส่งต่อการดูแลระยะยาว (Long-Term Care)
-                        </span>
-                      ) : (
-                        <span>
-                          พื้นที่ที่มีจำนวนผู้สูงอายุสะสมสูงสุดคือ กรุงเทพฯ และหัวเมืองใหญ่ภาคอีสาน (นครราชสีมา, ขอนแก่น, อุบลฯ)
-                          ต้องการขีดความสามารถการรองรับผู้ป่วยนอก (OPD) และเตียงเวชศาสตร์ผู้สูงอายุในปริมาณมาก
-                        </span>
-                      )}
-                    </div>
                   </div>
                 </div>
               ) : (
                 /* VIEW C: FULL AGE PYRAMID CHART */
                 <div>
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between mb-1.5 text-xs">
-                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                        <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2.5 text-sm">
+                      <span className="font-medium text-[#17191c] flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-[#17191c]" />
                         ปิรามิดประชากรรายช่วงอายุ (60 – 100+ ปี) ภาพรวมประเทศ
                       </span>
-                      <div className="flex items-center gap-2 text-[10px]">
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-blue-500"></span> ชาย
+                      <div className="flex items-center gap-2.5 text-xs text-[#5f6370]">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#5d2a1a]"></span> ชาย
                         </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-rose-500"></span> หญิง
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#b9826a]"></span> หญิง
                         </span>
                       </div>
                     </div>
 
-                    <div className="h-72 w-full bg-slate-50/60 p-2 rounded-xl border border-slate-100">
-                      <ResponsiveContainer width="100%" height="100%">
+                    <div className="h-72 w-full bg-white p-3.5 rounded-2xl border border-[#ececec]">
+                      <ResponsiveContainer width="100%" height={260}>
                         <BarChart
                           data={ageDistribution}
                           layout="vertical"
                           margin={{ top: 5, right: 15, left: 15, bottom: 5 }}
                         >
-                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                          <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                          <YAxis dataKey="age" type="category" tick={{ fontSize: 10 }} width={55} />
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#ececec" />
+                          <XAxis type="number" tick={{ fontSize: 13, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                          <YAxis dataKey="age" type="category" tick={{ fontSize: 13, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} width={65} />
                           <Tooltip
-                            isAnimationActive={false}
+                            contentStyle={rechartsTooltipStyle}
                             formatter={(val: any, name: any) => [`${Number(val).toLocaleString()} คน`, name]}
                           />
-                          <Bar dataKey="ชาย" fill="#3b82f6" radius={[0, 4, 4, 0]} isAnimationActive={false} />
-                          <Bar dataKey="หญิง" fill="#f43f5e" radius={[0, 4, 4, 0]} isAnimationActive={false} />
+                          <Bar dataKey="ชาย" fill="#5d2a1a" radius={[0, 4, 4, 0]} isAnimationActive={false} />
+                          <Bar dataKey="หญิง" fill="#b9826a" radius={[0, 4, 4, 0]} isAnimationActive={false} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
 
                   {/* 3 Life Stages Summary */}
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs pt-2 border-t border-slate-100">
-                    <div className="p-2 rounded-xl bg-blue-50 text-blue-900 border border-blue-100">
-                      <div className="text-[10px] text-blue-600 font-medium">วัยต้น (60-69 ปี)</div>
-                      <div className="font-bold text-sm mt-0.5">54.2%</div>
-                      <div className="text-[10px] text-slate-500">กลุ่มติดสังคม</div>
+                  <div className="grid grid-cols-3 gap-2.5 text-center text-xs pt-3.5 border-t border-[#ececec]">
+                    <div className="p-3.5 rounded-2xl bg-white border border-[#ececec]">
+                      <div className="text-xs text-[#5f6370] font-medium">วัยต้น (60-69 ปี)</div>
+                      <div className="font-serif font-normal text-base text-[#17191c] mt-0.5 tabular-nums">54.2%</div>
+                      <div className="text-xs text-[#6b6f7a] mt-0.5">กลุ่มติดสังคม</div>
                     </div>
-                    <div className="p-2 rounded-xl bg-amber-50 text-amber-900 border border-amber-100">
-                      <div className="text-[10px] text-amber-600 font-medium">วัยกลาง (70-79 ปี)</div>
-                      <div className="font-bold text-sm mt-0.5">31.3%</div>
-                      <div className="text-[10px] text-slate-500">กลุ่มติดบ้าน</div>
+                    <div className="p-3.5 rounded-2xl bg-white border border-[#ececec]">
+                      <div className="text-xs text-[#5f6370] font-medium">วัยกลาง (70-79 ปี)</div>
+                      <div className="font-serif font-normal text-base text-[#17191c] mt-0.5 tabular-nums">31.3%</div>
+                      <div className="text-xs text-[#6b6f7a] mt-0.5">กลุ่มติดบ้าน</div>
                     </div>
-                    <div className="p-2 rounded-xl bg-rose-50 text-rose-900 border border-rose-100">
-                      <div className="text-[10px] text-rose-600 font-medium">วัยปลาย (80+ ปี)</div>
-                      <div className="font-bold text-sm mt-0.5">14.5%</div>
-                      <div className="text-[10px] text-slate-500">เสี่ยงติดเตียง</div>
+                    <div className="p-3.5 rounded-2xl bg-white border border-[#ececec]">
+                      <div className="text-xs text-[#5f6370] font-medium">วัยปลาย (80+ ปี)</div>
+                      <div className="font-serif font-normal text-base text-[#5d2a1a] mt-0.5 tabular-nums">14.5%</div>
+                      <div className="text-xs text-[#6b6f7a] mt-0.5">เสี่ยงติดเตียง</div>
                     </div>
                   </div>
                 </div>
@@ -736,103 +629,84 @@ export const Tab2Population: React.FC<Tab2PopulationProps> = ({
         </div>
       )}
 
-      {/* SUB-VIEW 2: DEMOGRAPHIC FORECASTING MODEL (โมเดลทำนายประชากร 2570–2580) */}
+      {/* SUB-VIEW 2: DEMOGRAPHIC FORECASTING MODEL (2570–2580) */}
       {activeSubView === 'forecast' && (
-        <div className="space-y-6">
-          {/* Forecast Header & Scenario Controls */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div className="space-y-6 w-full">
+          <div className="bg-[#f2f2f3] p-6 rounded-[24px] w-full min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-medium text-[#17191c] flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-[#5d2a1a]" />
                   โมเดลทำนายการเติบโตและโครงสร้างประชากรผู้สูงอายุไทย (2566 – 2580)
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-sm text-[#5f6370] mt-1">
                   พัฒนาจากแบบจำลองการถดถอยพหุคูณและการคาดประมาณประชากรของสำนักงานสภาพัฒนาการเศรษฐกิจและสังคมแห่งชาติ (สศช./NESDC)
                 </p>
               </div>
 
               {/* Scenario Toggle */}
-              <div className="flex items-center bg-slate-100 p-1 rounded-xl self-start sm:self-auto text-xs">
-                <span className="text-slate-500 px-2 font-medium">แบบจำลอง:</span>
+              <div className="flex items-center space-x-1.5 text-sm font-medium">
                 <button
                   onClick={() => setForecastScenario('baseline')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                  className={`px-4 py-2 min-h-[44px] rounded-full transition-all ${
                     forecastScenario === 'baseline'
-                      ? 'bg-purple-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-[#17191c] text-white'
+                      : 'bg-white border border-[#ececec] text-[#5f6370] hover:text-[#17191c] hover:bg-[#fafafb]'
                   }`}
                 >
                   แนวโน้มฐาน (Baseline)
                 </button>
                 <button
                   onClick={() => setForecastScenario('high')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                  className={`px-4 py-2 min-h-[44px] rounded-full transition-all ${
                     forecastScenario === 'high'
-                      ? 'bg-rose-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-[#17191c] text-white'
+                      : 'bg-white border border-[#ececec] text-[#5f6370] hover:text-[#17191c] hover:bg-[#fafafb]'
                   }`}
                 >
-                  สูงวัยเร่งด่วน (High Aging)
+                  สูงวัยเร่งด่วน (High)
                 </button>
                 <button
                   onClick={() => setForecastScenario('low')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                  className={`px-4 py-2 min-h-[44px] rounded-full transition-all ${
                     forecastScenario === 'low'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-[#17191c] text-white'
+                      : 'bg-white border border-[#ececec] text-[#5f6370] hover:text-[#17191c] hover:bg-[#fafafb]'
                   }`}
                 >
-                  อนุรักษ์นิยม (Conservative)
+                  อนุรักษ์นิยม (Low)
                 </button>
               </div>
             </div>
 
-            {/* Projection Main Area Chart */}
-            <div className="h-80 w-full mb-4">
-              <ResponsiveContainer width="100%" height="100%">
+            {/* Projection Area Chart in Steep palette */}
+            <div className="h-96 w-full mb-4 bg-white p-4 rounded-2xl border border-[#ececec]">
+              <ResponsiveContainer width="100%" height={340}>
                 <AreaChart data={forecastChartData} margin={{ top: 15, right: 25, left: -10, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="actualArea" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#2563eb" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
-                    </linearGradient>
-                    <linearGradient id="forecastArea" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#9333ea" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#9333ea" stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="year" tick={{ fontSize: 11 }} />
-                  <YAxis
-                    domain={[9, 18]}
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={(v) => `${v}M คน`}
-                  />
-                  <Tooltip
-                    isAnimationActive={false}
-                    formatter={(val: any, name: any) => [`${val} ล้านคน`, name]}
-                  />
-                  <Legend />
-                  <ReferenceLine x="2569" stroke="#f43f5e" strokeDasharray="3 3" label={{ value: 'จุดเริ่มโมเดลทำนาย ➔', position: 'top', fill: '#f43f5e', fontSize: 10 }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ececec" />
+                  <XAxis dataKey="year" tick={{ fontSize: 14, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} />
+                  <YAxis domain={[9, 19]} tick={{ fontSize: 14, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} tickFormatter={(v) => `${v}M คน`} />
+                  <Tooltip contentStyle={rechartsTooltipStyle} formatter={(val: any, name: any) => [`${val} ล้านคน`, name]} />
+                  <Legend wrapperStyle={{ fontSize: '14px', paddingTop: '10px' }} />
+                  <ReferenceLine x="2569" stroke="#5d2a1a" strokeDasharray="3 3" label={{ value: 'จุดเริ่มทำนาย ➔', position: 'top', fill: '#5d2a1a', fontSize: 12 }} />
                   <Area
                     type="monotone"
                     dataKey="ผู้สูงอายุจริง"
-                    stroke="#2563eb"
+                    stroke="#5d2a1a"
                     strokeWidth={2.5}
-                    fillOpacity={1}
-                    fill="url(#actualArea)"
+                    fillOpacity={0.15}
+                    fill="#5d2a1a"
                     name="ข้อมูลจริง (2566–2569)"
                     isAnimationActive={false}
                   />
                   <Area
                     type="monotone"
                     dataKey="ผู้สูงอายุทำนาย"
-                    stroke="#9333ea"
-                    strokeWidth={2.5}
+                    stroke="#17191c"
+                    strokeWidth={2}
                     strokeDasharray="4 4"
-                    fillOpacity={1}
-                    fill="url(#forecastArea)"
+                    fillOpacity={0.1}
+                    fill="#17191c"
                     name="ค่าทำนายอนาคต (2570–2580)"
                     isAnimationActive={false}
                   />
@@ -840,60 +714,28 @@ export const Tab2Population: React.FC<Tab2PopulationProps> = ({
               </ResponsiveContainer>
             </div>
 
-            {/* Key Milestone Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100">
-              <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200">
-                <span className="text-[10px] font-bold text-blue-700 uppercase block">หมุดหมายที่ 1 (2567)</span>
-                <span className="text-sm font-bold text-slate-900 block mt-0.5">ก้าวข้าม 20% สูงวัยสมบูรณ์</span>
-                <p className="text-[11px] text-slate-600 mt-1">ผู้สูงอายุทะลุ 11.7 ล้านคน (1 ใน 5 ของประชากรไทย)</p>
+            {/* Milestone Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5 pt-3.5 border-t border-[#ececec]">
+              <div className="p-4 rounded-2xl bg-white border border-[#ececec]">
+                <span className="text-xs uppercase tracking-wider text-[#6b6f7a] block font-medium">หมุดหมายที่ 1 (2567)</span>
+                <span className="text-base font-medium text-[#17191c] block mt-1">ก้าวข้าม 20% สูงวัยสมบูรณ์</span>
+                <p className="text-sm text-[#5f6370] mt-1">ผู้สูงอายุทะลุ 11.7 ล้านคน (1 ใน 5 ของประชากร)</p>
               </div>
-
-              <div className="p-3 rounded-xl bg-purple-50/80 border border-purple-200">
-                <span className="text-[10px] font-bold text-purple-700 uppercase block">หมุดหมายที่ 2 (2572)</span>
-                <span className="text-sm font-bold text-slate-900 block mt-0.5">ผู้สูงอายุทะลุ 13.8 ล้านคน</span>
-                <p className="text-[11px] text-slate-600 mt-1">คิดเป็น 1 ใน 4 ของประชากรไทย ต้องการเตียงคลินิกเพิ่ม 28%</p>
+              <div className="p-4 rounded-2xl bg-white border border-[#ececec]">
+                <span className="text-xs uppercase tracking-wider text-[#6b6f7a] block font-medium">หมุดหมายที่ 2 (2572)</span>
+                <span className="text-base font-medium text-[#17191c] block mt-1">ผู้สูงอายุทะลุ 13.8 ล้านคน</span>
+                <p className="text-sm text-[#5f6370] mt-1">คิดเป็น 1 ใน 4 ของประชากรไทย</p>
               </div>
-
-              <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200">
-                <span className="text-[10px] font-bold text-amber-700 uppercase block">หมุดหมายที่ 3 (2576)</span>
-                <span className="text-sm font-bold text-slate-900 block mt-0.5">แตะระดับ 28% (Hyper-Aged)</span>
-                <p className="text-[11px] text-slate-600 mt-1">เข้าสู่สังคมสูงวัยระดับยิ่งยวดเทียบเท่าญี่ปุ่น</p>
+              <div className="p-4 rounded-2xl bg-white border border-[#ececec]">
+                <span className="text-xs uppercase tracking-wider text-[#6b6f7a] block font-medium">หมุดหมายที่ 3 (2576)</span>
+                <span className="text-base font-medium text-[#17191c] block mt-1">แตะระดับ 28% (Hyper-Aged)</span>
+                <p className="text-sm text-[#5f6370] mt-1">เข้าสู่สังคมสูงวัยระดับยิ่งยวดเทียบเท่าญี่ปุ่น</p>
               </div>
-
-              <div className="p-3 rounded-xl bg-rose-50/80 border border-rose-200">
-                <span className="text-[10px] font-bold text-rose-700 uppercase block">หมุดหมายที่ 4 (2580)</span>
-                <span className="text-sm font-bold text-slate-900 block mt-0.5">วิกฤตพึ่งพิง 1 : 1.7</span>
-                <p className="text-[11px] text-slate-600 mt-1">วัยแรงงานเหลือเพียง 1.7 คน ต้องดูแลผู้สูงอายุ 1 คน</p>
+              <div className="p-4 rounded-2xl bg-white border border-[#ececec]">
+                <span className="text-xs uppercase tracking-wider text-[#6b6f7a] block font-medium">หมุดหมายที่ 4 (2580)</span>
+                <span className="text-base font-medium text-[#17191c] block mt-1">วิกฤตพึ่งพิง 1 : 1.7</span>
+                <p className="text-sm text-[#5f6370] mt-1">วัยแรงงานเหลือเพียง 1.7 คน ต่อผู้สูงอายุ 1 คน</p>
               </div>
-            </div>
-          </div>
-
-          {/* Age Cohort Shift: Old-Old (80+) Explosive Growth */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <h4 className="text-sm font-bold text-slate-900 mb-1 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-rose-500" />
-              การเปลี่ยนแปลง 3 ช่วงวัยผู้สูงอายุ: กลุ่มวัยปลาย (80 ปีขึ้นไป) ขยายตัวเร็วที่สุด
-            </h4>
-            <p className="text-xs text-slate-500 mb-4">
-              ประชากรกลุ่มอายุ 80 ปีขึ้นไป (กลุ่มเสี่ยงติดบ้านและติดเตียง) จะเพิ่มขึ้นจาก 1.49 ล้านคน (ปี 2566) สู่ 3.05 ล้านคน (ปี 2580) เพิ่มขึ้นกว่า 104%
-            </p>
-
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={forecastChartData} margin={{ top: 10, right: 15, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="year" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}M`} />
-                  <Tooltip
-                    isAnimationActive={false}
-                    formatter={(val: any, name: any) => [`${val} ล้านคน`, name]}
-                  />
-                  <Legend />
-                  <Area type="monotone" dataKey="วัยต้น_60_69" stackId="1" stroke="#3b82f6" fill="#3b82f6" name="วัยต้น (60-69 ปี: ติดสังคม)" isAnimationActive={false} />
-                  <Area type="monotone" dataKey="วัยกลาง_70_79" stackId="1" stroke="#f59e0b" fill="#f59e0b" name="วัยกลาง (70-79 ปี: ติดบ้าน)" isAnimationActive={false} />
-                  <Area type="monotone" dataKey="วัยปลาย_80ขึ้นไป" stackId="1" stroke="#ef4444" fill="#ef4444" name="วัยปลาย (80+ ปี: เสี่ยงติดเตียง)" isAnimationActive={false} />
-                </AreaChart>
-              </ResponsiveContainer>
             </div>
           </div>
         </div>
@@ -901,182 +743,138 @@ export const Tab2Population: React.FC<Tab2PopulationProps> = ({
 
       {/* SUB-VIEW 3: INFOGRAPHICS & HEALTH DEMOGRAPHICS */}
       {activeSubView === 'infographics' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
           {/* Card 1: Super-Aged Gauge */}
-          <div className="bg-gradient-to-br from-blue-900 via-blue-950 to-slate-900 text-white p-6 rounded-2xl shadow-md border border-blue-800 flex flex-col justify-between">
+          <div className="bg-[#fbe1d1] text-[#5d2a1a] p-6 rounded-[24px] flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs uppercase font-bold tracking-wider text-blue-300">
-                  ระดับการเข้าสู่สังคมสูงวัย
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
-                  ปี {currentYear}
-                </span>
+                <span className="text-xs uppercase tracking-wider text-[#5d2a1a]/80 font-medium">ระดับสังคมสูงวัย</span>
+                <span className="px-3 py-1 rounded-full border border-[#5d2a1a]/30 text-xs font-medium tabular-nums">ปี {currentYear}</span>
               </div>
-              <h3 className="text-2xl font-black text-white">Super-Aged Society</h3>
-              <p className="text-xs text-blue-200 mt-1">
+              <h3 className="text-2xl font-serif font-normal text-[#5d2a1a]">Complete Aged Society</h3>
+              <p className="text-sm text-[#5d2a1a]/90 mt-1.5 leading-[1.6]">
                 ประเทศไทยก้าวข้ามเกณฑ์ 20% ของประชากรผู้สูงอายุอย่างเป็นทางการ
               </p>
             </div>
 
             <div className="my-6">
-              <div className="flex justify-between text-xs mb-1 font-semibold">
+              <div className="flex justify-between text-sm mb-1.5">
                 <span>สัดส่วนปัจจุบัน</span>
-                <span className="text-emerald-400 font-bold text-lg">{currentMetric.ratio}%</span>
+                <span className="font-serif font-normal text-2xl tabular-nums">{currentMetric.ratio}%</span>
               </div>
-              <div className="w-full h-3 bg-blue-950 rounded-full overflow-hidden border border-blue-700/50">
+              <div className="w-full h-2.5 bg-[#5d2a1a]/20 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-blue-500 via-emerald-400 to-amber-400 rounded-full"
+                  className="h-full bg-[#5d2a1a] rounded-full"
                   style={{ width: `${Math.min(100, (currentMetric.ratio / 28) * 100)}%` }}
                 />
               </div>
-              <div className="flex justify-between text-[10px] text-blue-300 mt-1">
-                <span>10% สังคมสูงวัย</span>
-                <span>20% สูงวัยสมบูรณ์</span>
-                <span>28% สูงวัยระดับสุดยอด</span>
+              <div className="flex justify-between text-xs text-[#5d2a1a]/70 mt-1.5 tabular-nums">
+                <span>10% Aging</span>
+                <span>20% Aged</span>
+                <span>28% Super-Aged</span>
               </div>
             </div>
 
-            <div className="text-[11px] text-blue-200 bg-blue-950/60 p-2.5 rounded-xl border border-blue-800/40">
-              💡 <strong>เป้าหมายระบบสุขภาพ:</strong> เน้นการขยายคลินิกผู้สูงอายุทุก รพช. ทั่วประเทศเพื่อรองรับกลุ่ม 70+
+            <div className="text-xs text-[#5d2a1a]/90 border-t border-[#5d2a1a]/15 pt-3">
+              เป้าหมาย: ขยายการบริการคลินิกผู้สูงอายุให้ครอบคลุมโรงพยาบาลชุมชนทั่วประเทศ →
             </div>
           </div>
 
           {/* Card 2: Old-Age Dependency Ratio */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div className="bg-[#f2f2f3] p-6 rounded-[24px] flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs uppercase font-bold tracking-wider text-slate-500">
-                  อัตราส่วนการพึ่งพิงวัยแรงงาน
-                </span>
-                <Scale className="w-4 h-4 text-blue-600" />
+                <span className="text-xs uppercase tracking-wider text-[#6b6f7a] font-medium">อัตราส่วนการพึ่งพิง</span>
+                <Scale className="w-5 h-5 text-[#17191c]" />
               </div>
-              <h3 className="text-2xl font-black text-slate-900">1 : 3.0 คน</h3>
-              <p className="text-xs text-slate-500 mt-1">
+              <h3 className="text-2xl font-serif font-normal text-[#17191c]">1 : 3.0 คน</h3>
+              <p className="text-sm text-[#5f6370] mt-1.5 leading-[1.6]">
                 ประชากรวัยแรงงาน (15-59 ปี) ทุก 3.0 คน ต้องดูแลผู้สูงอายุ 1 คน
               </p>
             </div>
 
-            <div className="my-4 py-3 border-y border-slate-100 flex items-center justify-around text-center">
+            <div className="my-4 py-3.5 border-y border-[#ececec] flex items-center justify-around text-center">
               <div>
-                <span className="text-[10px] text-slate-400 block">ปี 2566</span>
-                <span className="text-base font-bold text-slate-800">1 : 3.6</span>
+                <span className="text-xs text-[#6b6f7a] block">ปี 2566</span>
+                <span className="text-lg font-serif font-normal text-[#17191c] tabular-nums">1 : 3.6</span>
               </div>
-              <div className="text-slate-300">➔</div>
+              <div className="text-[#ececec]">→</div>
               <div>
-                <span className="text-[10px] text-blue-600 font-bold block">ปี 2569</span>
-                <span className="text-xl font-bold text-blue-600">1 : 3.0</span>
+                <span className="text-xs text-[#5d2a1a] block font-medium">ปี 2569</span>
+                <span className="text-2xl font-serif font-normal text-[#5d2a1a] tabular-nums">1 : 3.0</span>
               </div>
-              <div className="text-slate-300">➔</div>
+              <div className="text-[#ececec]">→</div>
               <div>
-                <span className="text-[10px] text-rose-500 font-bold block">ปี 2580 (ทำนาย)</span>
-                <span className="text-base font-bold text-rose-600">1 : 1.7</span>
+                <span className="text-xs text-[#5f6370] block">ปี 2580 (ทำนาย)</span>
+                <span className="text-lg font-serif font-normal text-[#5f6370] tabular-nums">1 : 1.7</span>
               </div>
             </div>
 
-            <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl">
-              ภาระการพึ่งพิงเพิ่มขึ้นอย่างรวดเร็ว ส่งผลต่องบประมาณหลักประกันสุขภาพและกองทุนดูแลระยะยาว (LTC)
+            <div className="text-sm text-[#5f6370] leading-[1.6]">
+              ภาระการพึ่งพิงเพิ่มขึ้นอย่างต่อเนื่อง ส่งผลต่องบประมาณหลักประกันสุขภาพและกองทุน LTC
             </div>
           </div>
 
           {/* Card 3: Gender Longevity Gap */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div className="bg-[#f2f2f3] p-6 rounded-[24px] flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs uppercase font-bold tracking-wider text-slate-500">
-                  ความเหลื่อมล้ำอายุขัย ชาย - หญิง
-                </span>
-                <HeartPulse className="w-4 h-4 text-rose-500" />
+                <span className="text-xs uppercase tracking-wider text-[#6b6f7a] font-medium">ความต่างอายุขัย ชาย - หญิง</span>
+                <HeartPulse className="w-5 h-5 text-[#17191c]" />
               </div>
-              <h3 className="text-2xl font-black text-slate-900">หญิง 56% / ชาย 44%</h3>
-              <p className="text-xs text-slate-500 mt-1">
+              <h3 className="text-2xl font-serif font-normal text-[#17191c]">หญิง 56% / ชาย 44%</h3>
+              <p className="text-sm text-[#5f6370] mt-1.5 leading-[1.6]">
                 เพศหญิงอายุยืนกว่าเพศชายอย่างมีนัยสำคัญในทุกเขตสุขภาพ
               </p>
             </div>
 
-            <div className="my-4 space-y-2">
+            <div className="my-4 space-y-3">
               <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-rose-600 font-bold">หญิง (7,037,846 คน)</span>
-                  <span className="text-rose-600 font-bold">56.0%</span>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-[#17191c] font-medium">หญิง (7.04M คน)</span>
+                  <span className="font-serif font-normal text-lg text-[#5d2a1a] tabular-nums">56.0%</span>
                 </div>
-                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-rose-500 rounded-full" style={{ width: '56%' }} />
+                <div className="w-full h-2 bg-white rounded-full overflow-hidden">
+                  <div className="h-full bg-[#5d2a1a] rounded-full" style={{ width: '56%' }} />
                 </div>
               </div>
               <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-blue-600 font-bold">ชาย (5,529,730 คน)</span>
-                  <span className="text-blue-600 font-bold">44.0%</span>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-[#5f6370]">ชาย (5.53M คน)</span>
+                  <span className="font-serif font-normal text-lg text-[#5f6370] tabular-nums">44.0%</span>
                 </div>
-                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 rounded-full" style={{ width: '44%' }} />
+                <div className="w-full h-2 bg-white rounded-full overflow-hidden">
+                  <div className="h-full bg-[#b9826a] rounded-full" style={{ width: '44%' }} />
                 </div>
               </div>
             </div>
 
-            <div className="text-xs text-slate-600 bg-rose-50/60 p-2.5 rounded-xl border border-rose-100">
-              ในกลุ่มอายุ 80 ปีขึ้นไป ผู้หญิงครองสัดส่วนสูงถึง <strong>63.4%</strong> (หญิงอยู่คนเดียวมากกว่าชาย 1.7 เท่า)
+            <div className="text-sm text-[#5f6370] leading-[1.6]">
+              ในกลุ่มอายุ 80 ปีขึ้นไป ผู้หญิงครองสัดส่วนสูงถึง <strong className="text-[#17191c] font-medium">63.4%</strong>
             </div>
           </div>
         </div>
       )}
 
-      {/* Tab 2 Dedicated Data Sources & Important Notes */}
+      {/* Tab Dedicated Data Sources */}
       <TabSourceReference
-        tabTitle="แท็บที่ 2: ข้อมูลประชากรผู้สูงอายุ (Aging Population & Projections)"
-        accentColor="emerald"
-        lastUpdated="พฤศจิกายน 2569"
+        tabTitle="ข้อมูลประชากรผู้สูงอายุ (Aging Population & Projections)"
+        lastUpdated="ปีงบประมาณ 2566–2569"
         sources={[
           {
             title: 'ระบบคลังข้อมูลด้านการแพทย์และสุขภาพ (Health Data Center: HDC)',
             dept: 'สำนักงานปลัดกระทรวงสาธารณสุข (สป.สธ.)',
-            url: 'https://hdcdev.moph.go.th/center/public/standard-report-detail/f83d0cd8b830706dab4cd3cb09afa584',
-            displayUrl: 'hdcdev.moph.go.th',
-            badge: 'ฐานข้อมูลประชากรรายเขต/รายจังหวัด',
-            badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-            description: 'สถิติจำนวนประชากรและสัดส่วนผู้สูงอายุ 60 ปีขึ้นไป ปี 2566–2569 ครอบคลุม 12 เขตสุขภาพ 76 จังหวัด และจำแนกตามกลุ่มอายุย่อย',
-            fileName: 'ข้อมูลประชากรผู้สูงอายุ_60ปีขึ้นไป_2566-2569_รายเขต_รายจังหวัด.xlsx'
+            description: 'สถิติจำนวนประชากรและสัดส่วนผู้สูงอายุ 60 ปีขึ้นไป ปี 2566–2569 ครอบคลุม 12 เขตสุขภาพ 76 จังหวัด และจำแนกตามกลุ่มอายุย่อย'
           },
           {
             title: 'สำนักบริหารการทะเบียน กรมการปกครอง (DOPA)',
             dept: 'กระทรวงมหาดไทย',
-            url: 'https://stat.bora.dopa.go.th',
-            displayUrl: 'stat.bora.dopa.go.th',
-            badge: 'สถิติทะเบียนราษฎร & กทม.',
-            badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
             description: 'สถิติจำนวนประชากรและสัดส่วนผู้สูงอายุตามทะเบียนราษฎรรายจังหวัด และข้อมูลของกรุงเทพมหานคร (เขตสุขภาพที่ 13)'
           },
           {
             title: 'สำนักงานสภาพัฒนาการเศรษฐกิจและสังคมแห่งชาติ (สศช. / NESDC)',
             dept: 'สำนักนายกรัฐมนตรี',
-            url: 'https://www.nesdc.go.th',
-            displayUrl: 'nesdc.go.th',
-            badge: 'การคาดประมาณประชากรไทย',
-            badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
             description: 'รายงานการคาดประมาณประชากรของประเทศไทย พ.ศ. 2553–2583 ที่นำมาใช้สอบเทียบอัตราการเติบโตของแบบจำลองพยากรณ์ประชากร 2570–2580'
-          }
-        ]}
-        notes={[
-          {
-            id: 't2-typearea',
-            title: '1. เงื่อนไขประชากรในระบบ HDC (Type Area 1, 3 และ Nation = 099)',
-            content: 'ข้อมูลประชากรผู้สูงอายุ HDC ยึดเกณฑ์ Type Area 1 (มีชื่อในทะเบียนบ้านและตัวอยู่จริง) และ Type Area 3 (ตัวอยู่จริงแต่ไม่มีชื่อในทะเบียนบ้าน) ร่วมกับสัญชาติไทย (รหัส 099) เพื่อสะท้อนกลุ่มเป้าหมายผู้รับบริการสุขภาพจริงในพื้นที่'
-          },
-          {
-            id: 't2-bkk',
-            title: '2. ข้อมูลพื้นที่กรุงเทพมหานคร (เขตสุขภาพที่ 13)',
-            content: 'สป.สธ. ไม่มีสถานพยาบาลสังกัดใน กทม. จึงไม่มีข้อมูล 43 แฟ้มใน HDC ดังนั้นข้อมูลประชากร กทม. ในแดชบอร์ดนี้จึงนำเข้าจากฐานข้อมูลสถิติทะเบียนราษฎร กรมการปกครอง (DOPA) ณ สิ้นปีของแต่ละปีงบประมาณ'
-          },
-          {
-            id: 't2-aging-level',
-            title: '3. นิยามระดับสังคมสูงวัย (Aging Classification)',
-            content: 'สังคมสูงวัย (Aging) ผู้สูงอายุ 60+ เกิน 10%, สังคมสูงวัยอย่างสมบูรณ์ (Aged) เกิน 20% (ประเทศไทยก้าวเข้าสู่ขั้นนี้ตั้งแต่ปี 2564 โดยปี 2569 อยู่ที่ 20.91%), และสังคมสูงวัยระดับสุดยอด (Super-Aged) เกิน 28% (คาดการณ์ปี 2572-2574)'
-          },
-          {
-            id: 't2-forecast',
-            title: '4. แบบจำลองการทำนายแนวโน้มประชากร (2570–2580)',
-            content: 'พัฒนาด้วยเทคนิค CAGR และ Modified Cohort Survival Ratio อิงฐานข้อมูลจริง 2566–2569 ร่วมกับสมมติฐานการคาดประมาณของ สศช. ภายใต้ 3 ฉากทัศน์ เพื่อสนับสนุนการวางแผนนโยบายกำลังคนและระบบบริการระยะยาว'
           }
         ]}
       />

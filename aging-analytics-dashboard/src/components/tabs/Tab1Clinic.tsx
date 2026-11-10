@@ -2,16 +2,17 @@ import React, { useState, useMemo } from 'react';
 import { ClinicZoneData, ClinicProvinceData, HospitalInfo } from '../../types';
 import { KPICard } from '../KPICard';
 import { ThailandClinicMap } from '../ThailandClinicMap';
-import { TabSourceReference, TabSourceItem, TabNoteItem } from '../TabSourceReference';
+import { TabSourceReference } from '../TabSourceReference';
 import {
-  Hospital, Award, CheckCircle2, AlertCircle, Clock, Search, Filter,
-  MapPin, Building2, ChevronRight, ArrowUpDown, Globe2, ShieldCheck, Stethoscope,
-  Map as MapIcon, LayoutGrid, Info, X
+  Hospital, Award, CheckCircle2, Clock, Search, Filter,
+  MapPin, Building2, ChevronRight, ArrowUpDown, Globe2,
+  Map as MapIcon, LayoutGrid, Info, X, BarChart3, PieChart as PieIcon, Layers
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
+import { CHART_PALETTE, rechartsTooltipStyle } from '../../theme/chartTheme';
 
 interface Tab1ClinicProps {
   zonesData: ClinicZoneData[];
@@ -27,24 +28,21 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
   setSelectedZone
 }) => {
   const [internalZone, setInternalZone] = useState<string>(selectedZone || 'ALL');
-  const [selectedProvinceName, setSelectedProvinceName] = useState<string>(''); // Default to empty (ยังไม่เลือกจังหวัด)
+  const [selectedProvinceName, setSelectedProvinceName] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [hospitalSearch, setHospitalSearch] = useState<string>('');
   const [sortField, setSortField] = useState<string>('total_hospitals');
   const [sortAsc, setSortAsc] = useState<boolean>(false);
-  const [pageSize, setPageSize] = useState<number>(77); // Show all 77 or pagination
+  const [pageSize, setPageSize] = useState<number>(77);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [visualMode, setVisualMode] = useState<'map' | 'cards'>('map'); // Default to map view
+  const [visualMode, setVisualMode] = useState<'map' | 'cards'>('map');
 
-  // Sync with prop if changes
   const activeZone = selectedZone !== 'ALL' ? selectedZone : internalZone;
 
-  // Clean list of zones (excluding total row)
   const cleanZones = useMemo(() => {
     return zonesData.filter(z => !z.zone.includes('รวม') && z.year !== 'รวม');
   }, [zonesData]);
 
-  // Zone list for dropdown
   const zoneOptions = useMemo(() => [
     { code: 'ALL', name: 'ทุกเขตสุขภาพ (ภาพรวมทั้งประเทศ)' },
     { code: '1', name: 'เขตสุขภาพที่ 1 (ภาคเหนือตอนบน)' },
@@ -62,7 +60,6 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
     { code: '13', name: 'เขตสุขภาพที่ 13 (กรุงเทพมหานคร)' },
   ], []);
 
-  // Filtered provinces list based on zone and search
   const filteredProvinces = useMemo(() => {
     return provincesData.filter(p => {
       const zoneNum = activeZone.replace(/^0+/, '');
@@ -74,14 +71,12 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
     });
   }, [provincesData, activeZone, searchTerm]);
 
-  // Available province options for select
   const availableProvinces = useMemo(() => {
     if (activeZone === 'ALL') return provincesData;
     const zoneNum = activeZone.replace(/^0+/, '');
     return provincesData.filter(p => p.zone.includes(`ที่ ${zoneNum}`) || p.zone.includes(`เขต ${zoneNum}`));
   }, [provincesData, activeZone]);
 
-  // Scope summary metrics when no specific province is selected
   const scopeSummary = useMemo(() => {
     const list = availableProvinces;
     const totalHospitals = list.reduce((acc, p) => acc + (p.total_hospitals || 0), 0);
@@ -119,13 +114,11 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
     };
   }, [availableProvinces, activeZone]);
 
-  // Selected province details for Side Info Panel (null if no province selected)
   const selectedProvince = useMemo(() => {
     if (!selectedProvinceName) return null;
     return provincesData.find(p => p.province === selectedProvinceName) || null;
   }, [provincesData, selectedProvinceName]);
 
-  // Filtered hospital list inside selected province
   const filteredHospitals = useMemo(() => {
     if (!selectedProvince?.hospitals_list) return [];
     if (!hospitalSearch.trim()) return selectedProvince.hospitals_list;
@@ -136,7 +129,6 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
     );
   }, [selectedProvince, hospitalSearch]);
 
-  // Sorted provinces for Table
   const sortedProvinces = useMemo(() => {
     const sorted = [...filteredProvinces].sort((a, b) => {
       let valA: any = a[sortField as keyof ClinicProvinceData];
@@ -155,14 +147,13 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
     return sorted;
   }, [filteredProvinces, sortField, sortAsc]);
 
-  // Paginated table data
   const paginatedProvinces = useMemo(() => {
     if (pageSize >= sortedProvinces.length) return sortedProvinces;
-    const start = (currentPage - 1) * pageSize;
-    return sortedProvinces.slice(start, start + pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    return sortedProvinces.slice(startIndex, startIndex + pageSize);
   }, [sortedProvinces, currentPage, pageSize]);
 
-  const totalPages = Math.ceil(sortedProvinces.length / pageSize);
+  const totalPages = Math.ceil(sortedProvinces.length / pageSize) || 1;
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -173,7 +164,6 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
     }
   };
 
-  // Chart data for evaluation levels across zones
   const chartZoneData = useMemo(() => {
     return cleanZones.map(z => ({
       name: z.zone.replace('เขตสุขภาพที่ ', 'เขต '),
@@ -181,57 +171,53 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
       ดีมาก: z.very_good,
       ดี: z.good,
       ผ่านพื้นฐาน: z.basic,
-      ควรพัฒนา: z.need_dev,
-      ยังไม่ได้ประเมิน: z.not_eval,
-      รวมประเมิน: z.total_evaluated,
-      ทั้งหมด: z.total_hospitals
+      ยังไม่ได้ประเมิน: z.not_eval
     }));
   }, [cleanZones]);
 
-  // Pie chart data for evaluation status
   const pieData = useMemo(() => [
-    { name: 'ดีเด่น (Excellent)', value: 84, color: '#059669' },
-    { name: 'ดีมาก (Very Good)', value: 237, color: '#10b981' },
-    { name: 'ดี (Good)', value: 345, color: '#3b82f6' },
-    { name: 'ผ่าน/พื้นฐาน (Basic)', value: 147, color: '#93c5fd' },
-    { name: 'ควรพัฒนา (Need Dev)', value: 5, color: '#f59e0b' },
-    { name: 'ยังไม่ได้ประเมิน', value: 119, color: '#cbd5e1' },
-  ], []);
-
-  // Hospital Level breakdown
-  const hospitalLevelData = useMemo(() => [
-    { level: 'ระดับ A (รพศ.)', count: 43, color: '#1e3a8a' },
-    { level: 'ระดับ S (รพท.ใหญ่)', count: 55, color: '#1d4ed8' },
-    { level: 'ระดับ M1 (รพท.กลาง)', count: 38, color: '#2563eb' },
-    { level: 'ระดับ M2 (รพท.เล็ก)', count: 96, color: '#3b82f6' },
-    { level: 'ระดับ F1 (รพช.ใหญ่)', count: 101, color: '#60a5fa' },
-    { level: 'ระดับ F2 (รพช.กลาง)', count: 505, color: '#93c5fd' },
-    { level: 'ระดับ F3 (รพช.เล็ก)', count: 75, color: '#bfdbfe' },
-  ], []);
+    { name: 'ดีเด่น (Excellent)', value: scopeSummary.excellent, color: '#5d2a1a' },
+    { name: 'ดีมาก (Very Good)', value: scopeSummary.veryGood, color: '#17191c' },
+    { name: 'ดี (Good)', value: scopeSummary.good, color: '#b9826a' },
+    { name: 'ผ่านพื้นฐาน (Basic)', value: scopeSummary.basic, color: '#777b86' },
+    { name: 'ยังไม่ได้ประเมิน', value: scopeSummary.notEval, color: '#d9d9dc' },
+  ], [scopeSummary]);
 
   return (
-    <div className="space-y-6">
-      {/* 1. Global Filter Bar: Health Region & Province */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-12 text-[#17191c]">
+      {/* Editorial Section Header */}
+      <div className="space-y-2 mb-6">
+        <span className="text-xs uppercase tracking-wider text-[#6b6f7a] block font-medium">
+          Geriatric Clinic Standards · ภาพรวม รพ. สังกัดกระทรวงสาธารณสุข
+        </span>
+        <h2 className="font-serif font-normal text-2xl sm:text-3xl lg:text-4xl text-[#17191c] leading-[1.35] mb-2">
+          ข้อมูลคลินิกผู้สูงอายุ พร้อมแสดงจำนวนเป้าหมาย รพ. 937 แห่ง
+        </h2>
+        <p className="text-base text-[#5f6370] w-full leading-[1.6]">
+          สรุปผลการประเมินมาตรฐานคลินิกผู้สูงอายุในโรงพยาบาลระดับ A, S, M, F ครอบคลุม 13 เขตสุขภาพ 77 จังหวัด
+        </p>
+      </div>
+
+      {/* Global Filter Bar: Floating Product Artifact Card */}
+      <div className="bg-white rounded-[20px] shadow-[0_0_0_1px_rgba(4,23,43,0.05),0_20px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center space-x-2 text-slate-700 font-bold text-sm">
-            <Filter className="w-4 h-4 text-blue-600" />
+          <div className="flex items-center space-x-2 text-[#17191c] text-sm font-medium">
+            <Filter className="w-4 h-4 text-[#17191c]" />
             <span>ฟิลเตอร์ข้อมูล:</span>
           </div>
 
           {/* Health Region Dropdown */}
-          <div className="flex items-center bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs">
-            <span className="text-slate-500 mr-2 font-medium">เขตสุขภาพ:</span>
+          <div className="flex items-center bg-white border border-[#ececec] rounded-[16px] px-4 py-2.5 min-h-[44px] text-sm text-[#17191c]">
+            <span className="text-[#5f6370] mr-2">เขตสุขภาพ:</span>
             <select
               value={activeZone}
               onChange={(e) => {
                 const z = e.target.value;
                 setInternalZone(z);
                 if (setSelectedZone) setSelectedZone(z);
-                // Reset province selection so it starts as overview
                 setSelectedProvinceName('');
               }}
-              className="bg-transparent text-slate-800 font-bold focus:outline-none cursor-pointer"
+              className="bg-transparent text-[#17191c] font-medium focus:outline-none cursor-pointer"
             >
               {zoneOptions.map(z => (
                 <option key={z.code} value={z.code}>{z.name}</option>
@@ -240,17 +226,17 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
           </div>
 
           {/* Province Dropdown */}
-          <div className="flex items-center bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs">
-            <span className="text-slate-500 mr-2 font-medium">จังหวัด:</span>
+          <div className="flex items-center bg-white border border-[#ececec] rounded-[16px] px-4 py-2.5 min-h-[44px] text-sm text-[#17191c]">
+            <span className="text-[#5f6370] mr-2">จังหวัด:</span>
             <select
               value={selectedProvinceName}
               onChange={(e) => setSelectedProvinceName(e.target.value)}
-              className="bg-transparent text-blue-700 font-bold focus:outline-none cursor-pointer max-w-[210px]"
+              className="bg-transparent text-[#17191c] font-medium focus:outline-none cursor-pointer max-w-[240px]"
             >
               <option value="">
                 {activeZone === 'ALL'
                   ? '— ทุกจังหวัด (ยังไม่เลือก) —'
-                  : `— ภาพรวมเขต ${activeZone.replace(/^0+/, '')} (ยังไม่เลือก) —`}
+                  : `— ภาพรวมเขต ${activeZone.replace(/^0+/, '')} —`}
               </option>
               {availableProvinces.map(p => (
                 <option key={p.province} value={p.province}>
@@ -262,9 +248,9 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
               <button
                 onClick={() => setSelectedProvinceName('')}
                 title="ล้างการเลือกจังหวัด"
-                className="ml-1 text-slate-400 hover:text-rose-600 transition-colors"
+                className="ml-2 text-[#5f6370] hover:text-[#17191c] transition-colors"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -272,100 +258,99 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
 
         {/* Search Input */}
         <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <Search className="w-4 h-4 text-[#5f6370] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="ค้นหาชื่อจังหวัด หรือ เขต..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full sm:w-60"
+            className="pl-10 pr-4 py-2.5 min-h-[44px] text-sm rounded-[16px] border border-[#ececec] bg-white text-[#17191c] placeholder-[#a3a6af] focus:outline-none focus:border-[#17191c] w-full sm:w-72"
           />
         </div>
       </div>
 
-      {/* 2. Top KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Top KPI Cards: auto-fit full row width */}
+      <div className="kpi-grid">
         <KPICard
           title="รพ. เป้าหมายทั้งหมด"
           value="937 แห่ง"
           subtitle="ระดับ A, S, M, F ทั่วประเทศ"
           badge="13 เขตสุขภาพ"
-          badgeColor="blue"
           icon={Hospital}
-          variant="navy"
+          variant="peach" // 1 single accent peach card
         />
         <KPICard
           title="ประเมินแล้ว"
           value="818 แห่ง"
           subtitle="คิดเป็น 87.3% ของ รพ. ทั้งหมด"
           badge="ผ่านเกณฑ์ 99.4%"
-          badgeColor="emerald"
           icon={CheckCircle2}
+          variant="neutral"
         />
         <KPICard
           title="เกณฑ์ดีเด่น (Excellent)"
           value="84 แห่ง"
           subtitle="10.3% ของ รพ. ที่ประเมิน"
-          badge="มาตรฐานสูงสุด"
-          badgeColor="emerald"
+          badge="มาตรฐานสูงสุด 5 ดาว"
           icon={Award}
+          variant="neutral"
         />
         <KPICard
           title="เกณฑ์ดีมาก & ดี"
           value="582 แห่ง"
           subtitle="71.1% ของ รพ. ที่ประเมิน"
           badge="ระดับมาตรฐานสูง"
-          badgeColor="blue"
           icon={CheckCircle2}
+          variant="neutral"
         />
         <KPICard
           title="ยังไม่ได้ประเมิน"
           value="119 แห่ง"
-          subtitle="12.7% อยู่ระหว่างดำเนินการ"
+          subtitle="12.7% รพ.เปิดใหม่/รพช.เล็ก F3"
           badge="รอการติดตาม"
-          badgeColor="amber"
           icon={Clock}
+          variant="neutral"
         />
       </div>
 
-      {/* 3. GEOGRAPHIC SECTION: THAILAND MAP + SIDE INFO PANEL */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Thailand Visual Map or Cards (7 cols) */}
-        <div className="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+      {/* GEOGRAPHIC SECTION: THAILAND MAP + SIDE INFO PANEL */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+        {/* Left: Thailand Visual Map (7 cols) */}
+        <div className="lg:col-span-7 bg-[#f2f2f3] p-6 rounded-[24px] flex flex-col justify-between min-w-0 w-full">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div>
-                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                  <Globe2 className="w-4 h-4 text-blue-600" />
+                <h3 className="text-lg font-medium text-[#17191c] flex items-center gap-2">
+                  <Globe2 className="w-5 h-5 text-[#17191c]" />
                   แผนผังภูมิศาสตร์คลินิกผู้สูงอายุประเทศไทย
                 </h3>
-                <p className="text-xs text-slate-500">
-                  คลิกที่จังหวัดบนแผนที่ประเทศไทย เพื่อดูรายชื่อโรงพยาบาลและสถิติคลินิกในกรอบด้านข้าง
+                <p className="text-sm text-[#5f6370] mt-1">
+                  คลิกที่จังหวัดบนแผนที่เพื่อดูรายชื่อโรงพยาบาลและสถิติคลินิกในกรอบด้านข้าง
                 </p>
               </div>
 
               {/* View Switcher: Map vs Cards */}
-              <div className="flex items-center bg-slate-100 p-1 rounded-xl self-start sm:self-auto shrink-0">
+              <div className="flex items-center space-x-1.5 self-start sm:self-auto shrink-0">
                 <button
                   onClick={() => setVisualMode('map')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`flex items-center gap-1.5 px-4 py-2 min-h-[44px] rounded-full text-sm transition-all ${
                     visualMode === 'map'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-[#17191c] text-white font-medium'
+                      : 'bg-white border border-[#ececec] text-[#17191c] hover:bg-[#fafafb]'
                   }`}
                 >
-                  <MapIcon className="w-3.5 h-3.5" />
+                  <MapIcon className="w-4 h-4" />
                   <span>แผนที่ไทย</span>
                 </button>
                 <button
                   onClick={() => setVisualMode('cards')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`flex items-center gap-1.5 px-4 py-2 min-h-[44px] rounded-full text-sm transition-all ${
                     visualMode === 'cards'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-[#17191c] text-white font-medium'
+                      : 'bg-white border border-[#ececec] text-[#17191c] hover:bg-[#fafafb]'
                   }`}
                 >
-                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <LayoutGrid className="w-4 h-4" />
                   <span>การ์ดจังหวัด</span>
                 </button>
               </div>
@@ -380,13 +365,10 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
                 activeZone={activeZone}
               />
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-[580px] overflow-y-auto pr-1 py-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[580px] overflow-y-auto pr-1 py-1">
                 {filteredProvinces.map(p => {
                   const isSelected = selectedProvinceName === p.province;
                   const evalRate = p.total_hospitals > 0 ? (p.total_evaluated / p.total_hospitals) * 100 : 0;
-                  const statusColor =
-                    evalRate >= 95 ? 'bg-emerald-500 text-white' :
-                    evalRate >= 70 ? 'bg-blue-500 text-white' : 'bg-amber-500 text-white';
 
                   return (
                     <button
@@ -398,25 +380,27 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
                           setSelectedProvinceName(p.province);
                         }
                       }}
-                      className={`text-left p-2.5 rounded-xl border transition-all text-xs flex flex-col justify-between ${
+                      className={`text-left p-3.5 rounded-2xl border transition-all text-sm flex flex-col justify-between ${
                         isSelected
-                          ? 'bg-blue-50/80 border-blue-600 shadow-sm ring-2 ring-blue-500/20'
-                          : 'bg-slate-50/70 border-slate-200 hover:bg-slate-100/80 hover:border-slate-300'
+                          ? 'bg-[#17191c] text-white border-[#17191c]'
+                          : 'bg-white border-[#ececec] hover:bg-[#fafafb] text-[#17191c]'
                       }`}
                     >
-                      <div className="flex items-center justify-between w-full mb-1">
-                        <span className="font-bold text-slate-900 truncate">{p.province}</span>
-                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${statusColor}`}>
+                      <div className="flex items-center justify-between w-full mb-1.5">
+                        <span className="font-medium truncate text-base">{p.province}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full tabular-nums font-medium ${
+                          isSelected ? 'bg-white/20 text-white' : 'bg-[#f2f2f3] text-[#5d2a1a]'
+                        }`}>
                           {evalRate.toFixed(0)}%
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-500">
-                        รพ. รวม: <strong className="text-slate-800">{p.total_hospitals}</strong> แห่ง
+                      <div className={`text-xs tabular-nums ${isSelected ? 'text-white/80' : 'text-[#5f6370]'}`}>
+                        รพ. รวม: {p.total_hospitals} แห่ง
                       </div>
-                      <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                      <div className={`text-xs mt-1.5 flex items-center justify-between ${isSelected ? 'text-white/60' : 'text-[#6b6f7a]'}`}>
                         <span>{p.zone.replace('เขตสุขภาพที่ ', 'เขต ')}</span>
                         {p.excellent > 0 && (
-                          <span className="text-emerald-700 font-bold bg-emerald-100 px-1 rounded">
+                          <span className={isSelected ? 'text-[#fbe1d1]' : 'text-[#5d2a1a] font-medium'}>
                             ดีเด่น {p.excellent}
                           </span>
                         )}
@@ -428,66 +412,66 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
             )}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span className="text-slate-600">
-              กำลังแสดงพื้นที่: <strong>{activeZone === 'ALL' ? 'ทั้ง 77 จังหวัดทั่วประเทศ' : `เฉพาะเขตสุขภาพที่ ${activeZone.replace(/^0+/, '')}`}</strong>
+          <div className="mt-4 pt-3.5 border-t border-[#ececec] flex items-center justify-between text-sm text-[#5f6370]">
+            <span>
+              กำลังแสดงพื้นที่: <strong className="text-[#17191c] font-medium">{activeZone === 'ALL' ? 'ทั้ง 77 จังหวัดทั่วประเทศ' : `เฉพาะเขตสุขภาพที่ ${activeZone.replace(/^0+/, '')}`}</strong>
             </span>
             <div className="flex items-center gap-2">
               {selectedProvince ? (
                 <>
-                  <span className="text-blue-600 font-semibold">
+                  <span className="text-[#17191c] font-medium">
                     เลือกดู: จังหวัด{selectedProvince.province}
                   </span>
                   <button
                     onClick={() => setSelectedProvinceName('')}
-                    className="text-[11px] text-slate-500 hover:text-rose-600 underline transition-colors"
+                    className="text-xs text-[#5f6370] hover:text-[#17191c] transition-colors"
                   >
                     ✕ ล้างการเลือก
                   </button>
                 </>
               ) : (
-                <span className="text-slate-500 font-medium">
-                  สถานะ: ภาพรวมพื้นที่ (ยังไม่ได้เลือกจังหวัด)
+                <span className="text-[#6b6f7a]">
+                  สถานะ: ภาพรวมพื้นที่
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        {/* Right: Dedicated Side Info Panel (กรอบข้อมูลแยกข้างๆ) (5 cols) */}
-        <div className="lg:col-span-5 bg-white p-5 rounded-2xl border-2 border-blue-200/90 shadow-md flex flex-col justify-between">
+        {/* Right: Dedicated Side Info Panel (5 cols) */}
+        <div className="lg:col-span-5 bg-[#f2f2f3] p-6 rounded-[24px] flex flex-col justify-between text-[#17191c] min-w-0 w-full">
           {selectedProvince ? (
             <div>
               {/* Header of selected province */}
-              <div className="flex items-start justify-between pb-3 border-b border-slate-100 mb-3">
+              <div className="flex items-start justify-between pb-3.5 border-b border-[#ececec] mb-4">
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                    <span className="text-xs font-medium text-[#5f6370] bg-white border border-[#ececec] px-3 py-1 rounded-full">
                       {selectedProvince.zone}
                     </span>
                     {selectedProvince.region && (
-                      <span className="text-[11px] text-slate-500 font-medium">
+                      <span className="text-xs text-[#6b6f7a]">
                         • {selectedProvince.region}
                       </span>
                     )}
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mt-1 flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-rose-500" />
+                  <h3 className="text-2xl sm:text-3xl font-serif font-normal text-[#17191c] mt-2 flex items-center gap-2 leading-[1.35]">
+                    <MapPin className="w-6 h-6 text-[#17191c]" />
                     จังหวัด{selectedProvince.province}
                   </h3>
                 </div>
-                <div className="flex items-center gap-2">
+
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => setSelectedProvinceName('')}
-                    className="text-[11px] px-2 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 transition-colors flex items-center gap-1 font-medium"
+                    className="text-xs px-3.5 py-1.5 rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors font-medium min-h-[38px] flex items-center gap-1"
                     title="กลับไปดูภาพรวม"
                   >
-                    <X className="w-3 h-3" />
-                    <span>ดูภาพรวม</span>
+                    <X className="w-3.5 h-3.5" /> ภาพรวม
                   </button>
                   <div className="text-right">
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wider block">ความครอบคลุม</span>
-                    <span className="text-lg font-bold text-emerald-600">
+                    <span className="text-xs text-[#6b6f7a] block font-medium">ความครอบคลุม</span>
+                    <span className="text-2xl font-serif font-normal text-[#5d2a1a] tabular-nums leading-[1.35]">
                       {selectedProvince.total_hospitals > 0
                         ? ((selectedProvince.total_evaluated / selectedProvince.total_hospitals) * 100).toFixed(1)
                         : 0}%
@@ -497,75 +481,58 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
               </div>
 
               {/* Quick Metrics of this Province */}
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="bg-slate-50 rounded-xl p-2.5 text-center border border-slate-100">
-                  <div className="text-[10px] text-slate-500">รพ. ทั้งหมด</div>
-                  <div className="text-lg font-bold text-slate-900">{selectedProvince.total_hospitals}</div>
-                  <div className="text-[10px] text-slate-400">แห่ง</div>
+              <div className="grid grid-cols-3 gap-2.5 mb-4">
+                <div className="bg-white rounded-2xl p-3.5 text-center border border-[#ececec]">
+                  <div className="text-xs text-[#5f6370] font-medium">รพ. ทั้งหมด</div>
+                  <div className="text-2xl font-serif font-normal text-[#17191c] tabular-nums mt-0.5 leading-[1.35]">{selectedProvince.total_hospitals}</div>
+                  <div className="text-xs text-[#6b6f7a] mt-0.5">แห่ง</div>
                 </div>
-                <div className="bg-emerald-50/70 rounded-xl p-2.5 text-center border border-emerald-100">
-                  <div className="text-[10px] text-emerald-700 font-medium">มีคลินิกประเมิน</div>
-                  <div className="text-lg font-bold text-emerald-800">{selectedProvince.total_evaluated}</div>
-                  <div className="text-[10px] text-emerald-600">แห่ง</div>
+                <div className="bg-[#fbe1d1] rounded-2xl p-3.5 text-center border-0 text-[#5d2a1a]">
+                  <div className="text-xs text-[#5d2a1a] font-medium">มีคลินิกประเมิน</div>
+                  <div className="text-2xl font-serif font-normal text-[#5d2a1a] tabular-nums mt-0.5 leading-[1.35]">{selectedProvince.total_evaluated}</div>
+                  <div className="text-xs text-[#5d2a1a]/80 mt-0.5">แห่ง</div>
                 </div>
-                <div className="bg-amber-50/70 rounded-xl p-2.5 text-center border border-amber-100">
-                  <div className="text-[10px] text-amber-700 font-medium">ยังไม่ประเมิน</div>
-                  <div className="text-lg font-bold text-amber-800">{selectedProvince.not_eval}</div>
-                  <div className="text-[10px] text-amber-600">แห่ง</div>
+                <div className="bg-white rounded-2xl p-3.5 text-center border border-[#ececec]">
+                  <div className="text-xs text-[#5f6370] font-medium">ยังไม่ประเมิน</div>
+                  <div className="text-2xl font-serif font-normal text-[#5f6370] tabular-nums mt-0.5 leading-[1.35]">{selectedProvince.not_eval}</div>
+                  <div className="text-xs text-[#6b6f7a] mt-0.5">แห่ง</div>
                 </div>
               </div>
 
               {/* Evaluation Quality Breakdown */}
-              <div className="mb-3">
-                <div className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                  <span>ผลการประเมินมาตรฐานคลินิก:</span>
-                  <span className="text-[10px] text-slate-400 font-normal">เกณฑ์ 5 ระดับ</span>
+              <div className="mb-4">
+                <div className="text-xs font-medium text-[#17191c] mb-2 flex items-center justify-between">
+                  <span>ผลการประเมินมาตรฐานคลินิก (5 ระดับ):</span>
                 </div>
                 <div className="grid grid-cols-5 gap-1.5 text-center text-xs">
-                  <div className="p-1.5 rounded-lg bg-emerald-100/70 text-emerald-800">
-                    <div className="text-[10px] font-medium">ดีเด่น</div>
-                    <div className="font-bold text-sm">{selectedProvince.excellent || 0}</div>
+                  <div className="p-2.5 rounded-2xl bg-white border border-[#ececec]">
+                    <div className="text-xs text-[#5d2a1a] font-medium">ดีเด่น</div>
+                    <div className="font-serif font-normal text-base text-[#5d2a1a] tabular-nums mt-0.5 leading-[1.35]">{selectedProvince.excellent || 0}</div>
                   </div>
-                  <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
-                    <div className="text-[10px] font-medium">ดีมาก</div>
-                    <div className="font-bold text-sm">{selectedProvince.very_good || 0}</div>
+                  <div className="p-2.5 rounded-2xl bg-white border border-[#ececec]">
+                    <div className="text-xs text-[#17191c] font-medium">ดีมาก</div>
+                    <div className="font-serif font-normal text-base text-[#17191c] tabular-nums mt-0.5 leading-[1.35]">{selectedProvince.very_good || 0}</div>
                   </div>
-                  <div className="p-1.5 rounded-lg bg-blue-50 text-blue-700">
-                    <div className="text-[10px] font-medium">ดี</div>
-                    <div className="font-bold text-sm">{selectedProvince.good || 0}</div>
+                  <div className="p-2.5 rounded-2xl bg-white border border-[#ececec]">
+                    <div className="text-xs text-[#5f6370] font-medium">ดี</div>
+                    <div className="font-serif font-normal text-base text-[#5f6370] tabular-nums mt-0.5 leading-[1.35]">{selectedProvince.good || 0}</div>
                   </div>
-                  <div className="p-1.5 rounded-lg bg-slate-100 text-slate-700">
-                    <div className="text-[10px] font-medium">พื้นฐาน</div>
-                    <div className="font-bold text-sm">{selectedProvince.basic || 0}</div>
+                  <div className="p-2.5 rounded-2xl bg-white border border-[#ececec]">
+                    <div className="text-xs text-[#6b6f7a] font-medium">พื้นฐาน</div>
+                    <div className="font-serif font-normal text-base text-[#6b6f7a] tabular-nums mt-0.5 leading-[1.35]">{selectedProvince.basic || 0}</div>
                   </div>
-                  <div className="p-1.5 rounded-lg bg-amber-50 text-amber-700">
-                    <div className="text-[10px] font-medium">ควรพัฒนา</div>
-                    <div className="font-bold text-sm">{selectedProvince.need_dev || 0}</div>
+                  <div className="p-2.5 rounded-2xl bg-white border border-[#ececec]">
+                    <div className="text-xs text-[#6b6f7a] font-medium">ควรพัฒนา</div>
+                    <div className="font-serif font-normal text-base text-[#6b6f7a] tabular-nums mt-0.5 leading-[1.35]">{selectedProvince.need_dev || 0}</div>
                   </div>
                 </div>
               </div>
 
-              {/* Hospital Level Breakdown in this province */}
-              <div className="mb-3">
-                <div className="text-xs font-bold text-slate-700 mb-1.5">
-                  ระดับศักยภาพ รพ. ในจังหวัด (A, S, M, F):
-                </div>
-                <div className="flex flex-wrap gap-1.5 text-[11px]">
-                  {selectedProvince.a > 0 && <span className="px-2 py-0.5 rounded bg-blue-900 text-white font-bold">A: {selectedProvince.a} แห่ง</span>}
-                  {selectedProvince.s > 0 && <span className="px-2 py-0.5 rounded bg-blue-800 text-white font-bold">S: {selectedProvince.s} แห่ง</span>}
-                  {selectedProvince.m1 > 0 && <span className="px-2 py-0.5 rounded bg-blue-700 text-white font-medium">M1: {selectedProvince.m1} แห่ง</span>}
-                  {selectedProvince.m2 > 0 && <span className="px-2 py-0.5 rounded bg-blue-600 text-white font-medium">M2: {selectedProvince.m2} แห่ง</span>}
-                  {selectedProvince.f1 > 0 && <span className="px-2 py-0.5 rounded bg-blue-500 text-white font-medium">F1: {selectedProvince.f1} แห่ง</span>}
-                  {selectedProvince.f2 > 0 && <span className="px-2 py-0.5 rounded bg-blue-400 text-slate-900 font-semibold">F2: {selectedProvince.f2} แห่ง</span>}
-                  {selectedProvince.f3 > 0 && <span className="px-2 py-0.5 rounded bg-blue-200 text-slate-900 font-semibold">F3: {selectedProvince.f3} แห่ง</span>}
-                </div>
-              </div>
-
-              {/* List of Hospitals in this Province (มี รพ อะไรบ้าง) */}
+              {/* List of Hospitals in this Province */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-sm font-medium text-[#17191c] flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-[#17191c]" />
                     รายชื่อโรงพยาบาลในจังหวัด ({filteredHospitals.length} แห่ง):
                   </span>
                   <input
@@ -573,37 +540,33 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
                     placeholder="ค้นหา รพ...."
                     value={hospitalSearch}
                     onChange={(e) => setHospitalSearch(e.target.value)}
-                    className="text-[10px] px-2 py-0.5 rounded-lg border border-slate-200 bg-slate-50 w-28 focus:outline-none focus:border-blue-500"
+                    className="text-xs px-3 py-1.5 min-h-[36px] rounded-[16px] border border-[#ececec] bg-white text-[#17191c] w-36 focus:outline-none focus:border-[#17191c]"
                   />
                 </div>
 
-                <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1 text-xs">
+                <div className="max-h-56 overflow-y-auto space-y-2 pr-1 text-xs">
                   {filteredHospitals.length > 0 ? (
                     filteredHospitals.map((h, i) => (
                       <div
                         key={`${h.name}-${i}`}
-                        className="p-2 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:bg-blue-50/50 transition-colors"
+                        className="p-3 rounded-2xl bg-white border border-[#ececec] flex items-center justify-between"
                       >
-                        <div className="flex items-center space-x-2">
-                          <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                        <div className="flex items-center space-x-2.5 min-w-0">
+                          <span className="w-6 h-6 rounded-full bg-[#f2f2f3] text-[#17191c] text-xs font-medium flex items-center justify-center shrink-0 tabular-nums">
                             {i + 1}
                           </span>
-                          <div>
-                            <div className="font-semibold text-slate-900 leading-tight">{h.name}</div>
-                            {h.code && <div className="text-[10px] text-slate-400 font-mono">รหัส: {h.code}</div>}
+                          <div className="min-w-0">
+                            <div className="font-medium text-sm text-[#17191c] truncate">{h.name}</div>
+                            {h.code && <div className="text-xs text-[#6b6f7a] font-mono">รหัส: {h.code}</div>}
                           </div>
                         </div>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap ${
-                          h.level.includes('A') ? 'bg-blue-900 text-white' :
-                          h.level.includes('S') || h.level.includes('M') ? 'bg-blue-700 text-white' :
-                          'bg-slate-200 text-slate-700'
-                        }`}>
+                        <span className="text-xs px-3 py-1 rounded-full bg-[#f2f2f3] text-[#5f6370] border border-[#ececec] font-medium shrink-0 ml-2">
                           {h.level}
                         </span>
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-4 text-xs text-slate-400">
+                    <div className="text-center py-5 text-sm text-[#6b6f7a]">
                       ไม่พบรายชื่อโรงพยาบาลที่ค้นหา
                     </div>
                   )}
@@ -613,182 +576,138 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
           ) : (
             <div>
               {/* Header of Area Overview */}
-              <div className="flex items-start justify-between pb-3 border-b border-slate-100 mb-3">
+              <div className="flex items-start justify-between pb-3.5 border-b border-[#ececec] mb-4">
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-[11px] font-semibold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-md">
+                    <span className="text-xs font-medium text-[#5f6370] bg-white border border-[#ececec] px-3 py-1 rounded-full">
                       {scopeSummary.title}
                     </span>
-                    <span className="text-[11px] text-slate-500 font-medium">
+                    <span className="text-xs text-[#6b6f7a]">
                       • {scopeSummary.provinceCount} จังหวัด
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mt-1 flex items-center gap-2">
-                    <Globe2 className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-2xl sm:text-3xl font-serif font-normal text-[#17191c] mt-2 flex items-center gap-2 leading-[1.35]">
+                    <Globe2 className="w-6 h-6 text-[#17191c]" />
                     ภาพรวมคลินิกผู้สูงอายุ
                   </h3>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">ความครอบคลุม</span>
-                  <span className="text-lg font-bold text-emerald-600">
+                  <span className="text-xs text-[#6b6f7a] block font-medium">ความครอบคลุม</span>
+                  <span className="text-2xl font-serif font-normal text-[#5d2a1a] tabular-nums leading-[1.35]">
                     {scopeSummary.evalRate.toFixed(1)}%
                   </span>
                 </div>
               </div>
 
               {/* Quick Metrics of this Scope */}
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="bg-slate-50 rounded-xl p-2.5 text-center border border-slate-100">
-                  <div className="text-[10px] text-slate-500">รพ. ทั้งหมด</div>
-                  <div className="text-lg font-bold text-slate-900">{scopeSummary.totalHospitals}</div>
-                  <div className="text-[10px] text-slate-400">แห่ง</div>
+              <div className="grid grid-cols-3 gap-2.5 mb-4">
+                <div className="bg-white rounded-2xl p-3.5 text-center border border-[#ececec]">
+                  <div className="text-xs text-[#5f6370] font-medium">รพ. ทั้งหมด</div>
+                  <div className="text-2xl font-serif font-normal text-[#17191c] tabular-nums mt-0.5 leading-[1.35]">{scopeSummary.totalHospitals}</div>
+                  <div className="text-xs text-[#6b6f7a] mt-0.5">แห่ง</div>
                 </div>
-                <div className="bg-emerald-50/70 rounded-xl p-2.5 text-center border border-emerald-100">
-                  <div className="text-[10px] text-emerald-700 font-medium">มีคลินิกประเมิน</div>
-                  <div className="text-lg font-bold text-emerald-800">{scopeSummary.totalEvaluated}</div>
-                  <div className="text-[10px] text-emerald-600">แห่ง</div>
+                <div className="bg-[#fbe1d1] rounded-2xl p-3.5 text-center border-0 text-[#5d2a1a]">
+                  <div className="text-xs text-[#5d2a1a] font-medium">มีคลินิกประเมิน</div>
+                  <div className="text-2xl font-serif font-normal text-[#5d2a1a] tabular-nums mt-0.5 leading-[1.35]">{scopeSummary.totalEvaluated}</div>
+                  <div className="text-xs text-[#5d2a1a]/80 mt-0.5">แห่ง</div>
                 </div>
-                <div className="bg-amber-50/70 rounded-xl p-2.5 text-center border border-amber-100">
-                  <div className="text-[10px] text-amber-700 font-medium">ยังไม่ประเมิน</div>
-                  <div className="text-lg font-bold text-amber-800">{scopeSummary.notEval}</div>
-                  <div className="text-[10px] text-amber-600">แห่ง</div>
-                </div>
-              </div>
-
-              {/* Evaluation Quality Breakdown */}
-              <div className="mb-3">
-                <div className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                  <span>ผลการประเมินมาตรฐานคลินิก (ภาพรวม):</span>
-                  <span className="text-[10px] text-slate-400 font-normal">เกณฑ์ 5 ระดับ</span>
-                </div>
-                <div className="grid grid-cols-5 gap-1.5 text-center text-xs">
-                  <div className="p-1.5 rounded-lg bg-emerald-100/70 text-emerald-800">
-                    <div className="text-[10px] font-medium">ดีเด่น</div>
-                    <div className="font-bold text-sm">{scopeSummary.excellent}</div>
-                  </div>
-                  <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
-                    <div className="text-[10px] font-medium">ดีมาก</div>
-                    <div className="font-bold text-sm">{scopeSummary.veryGood}</div>
-                  </div>
-                  <div className="p-1.5 rounded-lg bg-blue-50 text-blue-700">
-                    <div className="text-[10px] font-medium">ดี</div>
-                    <div className="font-bold text-sm">{scopeSummary.good}</div>
-                  </div>
-                  <div className="p-1.5 rounded-lg bg-slate-100 text-slate-700">
-                    <div className="text-[10px] font-medium">พื้นฐาน</div>
-                    <div className="font-bold text-sm">{scopeSummary.basic}</div>
-                  </div>
-                  <div className="p-1.5 rounded-lg bg-amber-50 text-amber-700">
-                    <div className="text-[10px] font-medium">ควรพัฒนา</div>
-                    <div className="font-bold text-sm">{scopeSummary.needDev}</div>
-                  </div>
+                <div className="bg-white rounded-2xl p-3.5 text-center border border-[#ececec]">
+                  <div className="text-xs text-[#5f6370] font-medium">ยังไม่ประเมิน</div>
+                  <div className="text-2xl font-serif font-normal text-[#5f6370] tabular-nums mt-0.5 leading-[1.35]">{scopeSummary.notEval}</div>
+                  <div className="text-xs text-[#6b6f7a] mt-0.5">แห่ง</div>
                 </div>
               </div>
 
-              {/* Hospital Level Breakdown in scope */}
-              <div className="mb-3">
-                <div className="text-xs font-bold text-slate-700 mb-1.5">
-                  ระดับศักยภาพ รพ. ทั้งหมดในพื้นที่ (A, S, M, F):
-                </div>
-                <div className="flex flex-wrap gap-1.5 text-[11px]">
-                  {scopeSummary.a > 0 && <span className="px-2 py-0.5 rounded bg-blue-900 text-white font-bold">A: {scopeSummary.a} แห่ง</span>}
-                  {scopeSummary.s > 0 && <span className="px-2 py-0.5 rounded bg-blue-800 text-white font-bold">S: {scopeSummary.s} แห่ง</span>}
-                  {scopeSummary.m1 > 0 && <span className="px-2 py-0.5 rounded bg-blue-700 text-white font-medium">M1: {scopeSummary.m1} แห่ง</span>}
-                  {scopeSummary.m2 > 0 && <span className="px-2 py-0.5 rounded bg-blue-600 text-white font-medium">M2: {scopeSummary.m2} แห่ง</span>}
-                  {scopeSummary.f1 > 0 && <span className="px-2 py-0.5 rounded bg-blue-500 text-white font-medium">F1: {scopeSummary.f1} แห่ง</span>}
-                  {scopeSummary.f2 > 0 && <span className="px-2 py-0.5 rounded bg-blue-400 text-slate-900 font-semibold">F2: {scopeSummary.f2} แห่ง</span>}
-                  {scopeSummary.f3 > 0 && <span className="px-2 py-0.5 rounded bg-blue-200 text-slate-900 font-semibold">F3: {scopeSummary.f3} แห่ง</span>}
+              {/* Selection Guide */}
+              <div className="p-4 rounded-2xl bg-white border border-[#ececec] mb-3.5 flex items-start gap-3">
+                <Info className="w-5 h-5 text-[#17191c] shrink-0 mt-0.5" />
+                <div className="text-sm text-[#5f6370]">
+                  <span className="font-medium text-[#17191c]">เลือกจังหวัดเพื่อเจาะลึก:</span>
+                  <p className="text-xs text-[#5f6370] mt-1">
+                    คลิกที่จังหวัดบนแผนที่ประเทศไทย หรือเลือกจากรายการด้านล่างเพื่อดูรายชื่อ รพ. และสถิติเฉพาะพื้นที่
+                  </p>
                 </div>
               </div>
 
-              {/* Instruction Banner & Province selector */}
-              <div>
-                <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200/80 mb-2.5 flex items-start gap-2.5">
-                  <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                  <div className="text-xs text-blue-900">
-                    <span className="font-bold">ยังไม่ได้เลือกจังหวัด (แสดงภาพรวม)</span>
-                    <p className="text-[11px] text-blue-700 mt-0.5 leading-relaxed">
-                      คลิกที่จังหวัดบนแผนที่ประเทศไทย หรือเลือกจากรายการด้านล่าง เพื่อดูรายชื่อโรงพยาบาลและสถิติเฉพาะจังหวัด:
-                    </p>
-                  </div>
-                </div>
-
-                <div className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                  <span>เลือกจังหวัดในพื้นที่เพื่อเจาะลึก ({availableProvinces.length} จังหวัด):</span>
-                </div>
-
-                <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1 text-xs">
-                  {availableProvinces.map(p => {
-                    const pct = p.total_hospitals > 0 ? ((p.total_evaluated / p.total_hospitals) * 100).toFixed(0) : '0';
-                    return (
-                      <button
-                        key={p.province}
-                        onClick={() => setSelectedProvinceName(p.province)}
-                        className="w-full p-2 rounded-xl bg-slate-50 border border-slate-200 hover:bg-blue-50 hover:border-blue-400 hover:shadow-xs flex items-center justify-between text-left transition-all group"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-blue-500 group-hover:bg-blue-600" />
-                          <span className="font-semibold text-slate-800 group-hover:text-blue-700">{p.province}</span>
-                          <span className="text-[10px] text-slate-400">({p.zone.replace('เขตสุขภาพที่ ', 'เขต ')})</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-slate-600 font-medium">{p.total_hospitals} รพ.</span>
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-700">
-                            ประเมิน {pct}%
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="max-h-56 overflow-y-auto space-y-2 pr-1 text-sm">
+                {availableProvinces.map(p => {
+                  const pct = p.total_hospitals > 0 ? ((p.total_evaluated / p.total_hospitals) * 100).toFixed(0) : '0';
+                  return (
+                    <button
+                      key={p.province}
+                      onClick={() => setSelectedProvinceName(p.province)}
+                      className="w-full p-3 rounded-2xl bg-white border border-[#ececec] hover:border-[#17191c] flex items-center justify-between text-left transition-all"
+                    >
+                      <div>
+                        <span className="font-medium text-base text-[#17191c]">{p.province}</span>
+                        <span className="text-xs text-[#6b6f7a] ml-2">({p.zone.replace('เขตสุขภาพที่ ', 'เขต ')})</span>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs text-[#5f6370] tabular-nums">{p.total_hospitals} รพ.</span>
+                        <span className="text-xs px-2.5 py-1 rounded-full border border-[#ececec] text-[#5d2a1a] tabular-nums font-medium">
+                          ประเมิน {pct}%
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* 4. Macro Charts Row: Zones Stacked Chart & Quality Donut */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Macro Charts Row: Zones Stacked Chart & Quality Donut */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
         {/* Left: Stacked Bar Chart by Zone (2 cols) */}
-        <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-2 bg-[#f2f2f3] p-6 rounded-[24px] min-w-0 w-full space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-800">ผลการประเมินมาตรฐานคลินิกผู้สูงอายุ รายเขตสุขภาพ</h3>
-              <p className="text-xs text-slate-500">ปีงบประมาณ 2567 (จำแนกตามระดับผลการประเมิน)</p>
+              <h3 className="text-lg font-medium text-[#17191c] flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-[#17191c]" />
+                ผลการประเมินมาตรฐานคลินิกผู้สูงอายุ รายเขตสุขภาพ
+              </h3>
+              <p className="text-sm text-[#5f6370] mt-1">จำแนกตามระดับผลการประเมินมาตรฐาน รวม 12 เขต + กทม.</p>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
-              รวม 12 เขต + กทม.
+            <span className="text-xs px-3 py-1 rounded-full bg-white text-[#5f6370] border border-[#ececec]">
+              937 แห่ง
             </span>
           </div>
 
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartZoneData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" angle={-35} textAnchor="end" interval={0} tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
+          <div className="h-84 w-full bg-white p-4 rounded-2xl border border-[#ececec] min-w-0">
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={chartZoneData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ececec" />
+                <XAxis dataKey="name" angle={-30} textAnchor="end" interval={0} tick={{ fontSize: 13, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} />
+                <YAxis tick={{ fontSize: 14, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }}
+                  contentStyle={rechartsTooltipStyle}
                   formatter={(value: any, name: any) => [`${value} แห่ง`, name]}
                 />
-                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                <Bar dataKey="ดีเด่น" stackId="a" fill="#059669" isAnimationActive={false} />
-                <Bar dataKey="ดีมาก" stackId="a" fill="#10b981" isAnimationActive={false} />
-                <Bar dataKey="ดี" stackId="a" fill="#3b82f6" isAnimationActive={false} />
-                <Bar dataKey="ผ่านพื้นฐาน" stackId="a" fill="#93c5fd" isAnimationActive={false} />
-                <Bar dataKey="ยังไม่ได้ประเมิน" stackId="a" fill="#cbd5e1" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                <Legend wrapperStyle={{ fontSize: '14px', paddingTop: '12px' }} />
+                <Bar dataKey="ดีเด่น" stackId="a" fill="#5d2a1a" isAnimationActive={false} />
+                <Bar dataKey="ดีมาก" stackId="a" fill="#17191c" isAnimationActive={false} />
+                <Bar dataKey="ดี" stackId="a" fill="#b9826a" isAnimationActive={false} />
+                <Bar dataKey="ผ่านพื้นฐาน" stackId="a" fill="#777b86" isAnimationActive={false} />
+                <Bar dataKey="ยังไม่ได้ประเมิน" stackId="a" fill="#d9d9dc" radius={[4, 4, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Right: Proportion of Quality & Hospital Levels */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-[#f2f2f3] p-6 rounded-[24px] flex flex-col justify-between min-w-0 w-full">
           <div>
-            <h3 className="text-base font-bold text-slate-800 mb-1">สัดส่วนคุณภาพคลินิกผู้สูงอายุ</h3>
-            <p className="text-xs text-slate-500 mb-4">ภาพรวมทั้งประเทศ ปีงบประมาณ 2567</p>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-medium text-[#17191c] flex items-center gap-2">
+                <PieIcon className="w-5 h-5 text-[#17191c]" />
+                สัดส่วนคุณภาพคลินิกผู้สูงอายุ
+              </h3>
+              <span className="text-xs px-3 py-1 rounded-full bg-white text-[#5f6370] border border-[#ececec]">ภาพรวม</span>
+            </div>
+            <p className="text-sm text-[#5f6370] mb-4">ภาพรวมทั้งประเทศ เป้าหมาย รพ. 937 แห่ง</p>
 
-            <div className="h-52 w-full">
+            <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -806,57 +725,53 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
+                    contentStyle={rechartsTooltipStyle}
                     formatter={(val: any) => [`${val} แห่ง`, 'จำนวน']}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs mt-2">
+            <div className="grid grid-cols-2 gap-2.5 text-sm mt-3">
               {pieData.map(d => (
-                <div key={d.name} className="flex items-center space-x-1.5">
+                <div key={d.name} className="flex items-center space-x-2">
                   <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }}></span>
-                  <span className="text-slate-600 truncate">{d.name}:</span>
-                  <span className="font-bold text-slate-800">{d.value}</span>
+                  <span className="text-[#5f6370] truncate text-xs">{d.name.split(' (')[0]}:</span>
+                  <span className="font-medium text-[#17191c] tabular-nums text-sm">{d.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100">
-            <div className="text-xs font-semibold text-slate-700 mb-2">ศักยภาพโรงพยาบาลส่วนใหญ่:</div>
-            <div className="text-xs text-slate-600">
-              รพ. ระดับ <span className="font-bold text-blue-600">F2 (รพช. ขนาดกลาง)</span> มีจำนวนมากที่สุดถึง <strong>505 แห่ง (53.9%)</strong> ตามด้วย F1 (101 แห่ง) และ M2 (96 แห่ง)
-            </div>
+          <div className="mt-4 pt-3.5 border-t border-[#ececec] text-sm text-[#5f6370]">
+            รพ. ระดับ F2 (รพช. ขนาดกลาง) มีจำนวนมากที่สุดถึง <strong className="text-[#17191c] font-medium">505 แห่ง (53.9%)</strong>
           </div>
         </div>
       </div>
 
-      {/* 5. Complete 77 Provinces Table (FULL DATA WITH ALL COLUMNS) */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50/70">
+      {/* Complete 77 Provinces Table */}
+      <div className="bg-white rounded-[24px] border border-[#ececec] overflow-hidden w-full min-w-0 shadow-sm">
+        <div className="p-5 border-b border-[#ececec] flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#fafafb]">
           <div>
-            <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-blue-600" />
+            <h3 className="text-lg font-medium text-[#17191c] flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-[#17191c]" />
               ตารางข้อมูลผลประเมินคลินิกผู้สูงอายุ รายจังหวัด (ครบถ้วนทั้ง 77 จังหวัด)
             </h3>
-            <p className="text-xs text-slate-500">
-              จำแนกตามเขตสุขภาพ ศักยภาพ รพ. (A, S, M, F) และผลการประเมินมาตรฐานครบทุกมิติ (คลิกที่หัวตารางเพื่อเรียงลำดับ)
+            <p className="text-sm text-[#5f6370] mt-0.5">
+              จำแนกตามเขตสุขภาพ ศักยภาพ รพ. (A, S, M, F) และผลการประเมินมาตรฐาน
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* Page Size Selector */}
-            <div className="flex items-center space-x-2 text-xs">
-              <span className="text-slate-500">แสดงผล:</span>
+            <div className="flex items-center space-x-2 text-sm">
+              <span className="text-[#5f6370]">แสดงผล:</span>
               <select
                 value={pageSize}
                 onChange={(e) => {
                   setPageSize(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none"
+                className="bg-white text-[#17191c] border border-[#ececec] rounded-[16px] px-3.5 py-1.5 text-xs focus:outline-none min-h-[36px]"
               >
                 <option value={77}>ทั้งหมด (77 จังหวัด)</option>
                 <option value={25}>25 จังหวัด/หน้า</option>
@@ -865,49 +780,47 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
               </select>
             </div>
 
-            <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">
+            <span className="text-xs px-3 py-1 rounded-full bg-white text-[#5f6370] border border-[#ececec] tabular-nums">
               พบ {sortedProvinces.length} จังหวัด
             </span>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-700">
-            <thead className="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider text-[11px] border-b border-slate-200">
+        <div className="overflow-x-auto max-h-[640px]">
+          <table className="w-full text-left text-base text-[#17191c]">
+            <thead className="bg-[#fafafb] text-[#5f6370] font-medium text-sm border-b border-[#ececec] sticky top-0 z-10">
               <tr>
-                <th className="py-3 px-3 cursor-pointer hover:bg-slate-200" onClick={() => handleSort('zone')}>
-                  <div className="flex items-center gap-1">เขต <ArrowUpDown className="w-3 h-3" /></div>
+                <th className="py-3.5 px-3 cursor-pointer hover:text-[#17191c]" onClick={() => handleSort('zone')}>
+                  <div className="flex items-center gap-1">เขต <ArrowUpDown className="w-3.5 h-3.5" /></div>
                 </th>
-                <th className="py-3 px-3 cursor-pointer hover:bg-slate-200" onClick={() => handleSort('province')}>
-                  <div className="flex items-center gap-1">จังหวัด <ArrowUpDown className="w-3 h-3" /></div>
+                <th className="py-3.5 px-3 cursor-pointer hover:text-[#17191c]" onClick={() => handleSort('province')}>
+                  <div className="flex items-center gap-1">จังหวัด <ArrowUpDown className="w-3.5 h-3.5" /></div>
                 </th>
-                <th className="py-3 px-2 text-center bg-blue-50/80 cursor-pointer" onClick={() => handleSort('total_hospitals')}>
-                  <div className="flex items-center justify-center gap-1">รพ.ทั้งหมด <ArrowUpDown className="w-3 h-3" /></div>
+                <th className="py-3.5 px-2 text-center cursor-pointer" onClick={() => handleSort('total_hospitals')}>
+                  <div className="flex items-center justify-center gap-1">รพ.ทั้งหมด <ArrowUpDown className="w-3.5 h-3.5" /></div>
                 </th>
-                <th className="py-3 px-2 text-center bg-emerald-50/80 cursor-pointer" onClick={() => handleSort('total_evaluated')}>
-                  <div className="flex items-center justify-center gap-1">ประเมินแล้ว <ArrowUpDown className="w-3 h-3" /></div>
+                <th className="py-3.5 px-2 text-center cursor-pointer" onClick={() => handleSort('total_evaluated')}>
+                  <div className="flex items-center justify-center gap-1">ประเมินแล้ว <ArrowUpDown className="w-3.5 h-3.5" /></div>
                 </th>
-                {/* Hospital levels */}
-                <th className="py-3 px-1.5 text-center text-blue-900 bg-slate-50">A</th>
-                <th className="py-3 px-1.5 text-center text-blue-800 bg-slate-50">S</th>
-                <th className="py-3 px-1.5 text-center text-blue-700 bg-slate-50">M1</th>
-                <th className="py-3 px-1.5 text-center text-blue-600 bg-slate-50">M2</th>
-                <th className="py-3 px-1.5 text-center text-blue-500 bg-slate-50">F1</th>
-                <th className="py-3 px-1.5 text-center text-blue-400 bg-slate-50">F2</th>
-                <th className="py-3 px-1.5 text-center text-blue-300 bg-slate-50">F3</th>
-                {/* Evaluation levels */}
-                <th className="py-3 px-2 text-center text-emerald-800 bg-emerald-50/40">ดีเด่น</th>
-                <th className="py-3 px-2 text-center text-emerald-700 bg-emerald-50/40">ดีมาก</th>
-                <th className="py-3 px-2 text-center text-blue-600 bg-blue-50/40">ดี</th>
-                <th className="py-3 px-2 text-center text-slate-600">พื้นฐาน</th>
-                <th className="py-3 px-2 text-center text-amber-600">ควรพัฒนา</th>
-                <th className="py-3 px-2 text-center text-rose-600 bg-rose-50/40">ยังไม่ประเมิน</th>
-                <th className="py-3 px-3 text-center cursor-pointer hover:bg-slate-200" onClick={() => handleSort('eval_pct')}>
-                  <div className="flex items-center justify-center gap-1">% ประเมิน <ArrowUpDown className="w-3 h-3" /></div>
+                <th className="py-3.5 px-1.5 text-center">A</th>
+                <th className="py-3.5 px-1.5 text-center">S</th>
+                <th className="py-3.5 px-1.5 text-center">M1</th>
+                <th className="py-3.5 px-1.5 text-center">M2</th>
+                <th className="py-3.5 px-1.5 text-center">F1</th>
+                <th className="py-3.5 px-1.5 text-center">F2</th>
+                <th className="py-3.5 px-1.5 text-center">F3</th>
+                <th className="py-3.5 px-2 text-center">ดีเด่น</th>
+                <th className="py-3.5 px-2 text-center">ดีมาก</th>
+                <th className="py-3.5 px-2 text-center">ดี</th>
+                <th className="py-3.5 px-2 text-center">พื้นฐาน</th>
+                <th className="py-3.5 px-2 text-center">ควรพัฒนา</th>
+                <th className="py-3.5 px-2 text-center">ยังไม่ประเมิน</th>
+                <th className="py-3.5 px-3 text-center cursor-pointer hover:text-[#17191c]" onClick={() => handleSort('eval_pct')}>
+                  <div className="flex items-center justify-center gap-1">% ประเมิน <ArrowUpDown className="w-3.5 h-3.5" /></div>
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#ececec]">
               {paginatedProvinces.map((p, idx) => {
                 const isSelected = selectedProvinceName === p.province;
                 const evalPct = p.total_hospitals > 0 ? ((p.total_evaluated / p.total_hospitals) * 100).toFixed(1) : '0';
@@ -922,48 +835,40 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
                         setSelectedProvinceName(p.province);
                       }
                     }}
-                    className={`cursor-pointer transition-colors ${
-                      isSelected
-                        ? 'bg-blue-100/70 font-semibold text-slate-900 ring-1 ring-inset ring-blue-500'
-                        : 'hover:bg-slate-50/90'
+                    className={`cursor-pointer transition-colors h-[54px] ${
+                      isSelected ? 'bg-[#f2f2f3]' : 'hover:bg-[#fafafb]'
                     }`}
                   >
-                    <td className="py-2 px-3 font-medium text-slate-500 whitespace-nowrap">
+                    <td className="py-3.5 px-3 text-[#5f6370] whitespace-nowrap text-sm">
                       {p.zone.replace('เขตสุขภาพที่ ', 'เขต ')}
                     </td>
-                    <td className="py-2 px-3 font-bold text-slate-900 whitespace-nowrap flex items-center gap-1">
+                    <td className="py-3.5 px-3 font-medium text-[#17191c] whitespace-nowrap text-base">
                       {p.province}
-                      {isSelected && <ChevronRight className="w-3 h-3 text-blue-600 inline" />}
                     </td>
-                    <td className="py-2 px-2 text-center font-bold bg-blue-50/40">{p.total_hospitals}</td>
-                    <td className="py-2 px-2 text-center font-bold text-emerald-700 bg-emerald-50/40">{p.total_evaluated}</td>
-                    {/* Levels */}
-                    <td className="py-2 px-1.5 text-center text-slate-500">{p.a || '-'}</td>
-                    <td className="py-2 px-1.5 text-center text-slate-500">{p.s || '-'}</td>
-                    <td className="py-2 px-1.5 text-center text-slate-500">{p.m1 || '-'}</td>
-                    <td className="py-2 px-1.5 text-center text-slate-500">{p.m2 || '-'}</td>
-                    <td className="py-2 px-1.5 text-center text-slate-500">{p.f1 || '-'}</td>
-                    <td className="py-2 px-1.5 text-center text-slate-500">{p.f2 || '-'}</td>
-                    <td className="py-2 px-1.5 text-center text-slate-500">{p.f3 || '-'}</td>
-                    {/* Evaluation grades */}
-                    <td className="py-2 px-2 text-center font-bold text-emerald-800 bg-emerald-50/20">{p.excellent || '-'}</td>
-                    <td className="py-2 px-2 text-center font-semibold text-emerald-700 bg-emerald-50/20">{p.very_good || '-'}</td>
-                    <td className="py-2 px-2 text-center font-semibold text-blue-600 bg-blue-50/20">{p.good || '-'}</td>
-                    <td className="py-2 px-2 text-center text-slate-600">{p.basic || '-'}</td>
-                    <td className="py-2 px-2 text-center text-amber-600">{p.need_dev || '-'}</td>
-                    <td className="py-2 px-2 text-center font-bold text-rose-600 bg-rose-50/20">{p.not_eval || '-'}</td>
-                    <td className="py-2 px-3 text-center">
-                      <div className="flex items-center justify-center space-x-1.5">
-                        <div className="w-12 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                    <td className="py-3.5 px-2 text-center tabular-nums text-base">{p.total_hospitals}</td>
+                    <td className="py-3.5 px-2 text-center font-medium text-[#5d2a1a] tabular-nums text-base">{p.total_evaluated}</td>
+                    <td className="py-3.5 px-1.5 text-center text-[#5f6370] tabular-nums text-sm">{p.a || '-'}</td>
+                    <td className="py-3.5 px-1.5 text-center text-[#5f6370] tabular-nums text-sm">{p.s || '-'}</td>
+                    <td className="py-3.5 px-1.5 text-center text-[#5f6370] tabular-nums text-sm">{p.m1 || '-'}</td>
+                    <td className="py-3.5 px-1.5 text-center text-[#5f6370] tabular-nums text-sm">{p.m2 || '-'}</td>
+                    <td className="py-3.5 px-1.5 text-center text-[#5f6370] tabular-nums text-sm">{p.f1 || '-'}</td>
+                    <td className="py-3.5 px-1.5 text-center text-[#5f6370] tabular-nums text-sm">{p.f2 || '-'}</td>
+                    <td className="py-3.5 px-1.5 text-center text-[#5f6370] tabular-nums text-sm">{p.f3 || '-'}</td>
+                    <td className="py-3.5 px-2 text-center font-medium text-[#5d2a1a] tabular-nums text-base">{p.excellent || '-'}</td>
+                    <td className="py-3.5 px-2 text-center text-[#17191c] tabular-nums text-base">{p.very_good || '-'}</td>
+                    <td className="py-3.5 px-2 text-center text-[#5f6370] tabular-nums text-base">{p.good || '-'}</td>
+                    <td className="py-3.5 px-2 text-center text-[#6b6f7a] tabular-nums text-base">{p.basic || '-'}</td>
+                    <td className="py-3.5 px-2 text-center text-[#6b6f7a] tabular-nums text-base">{p.need_dev || '-'}</td>
+                    <td className="py-3.5 px-2 text-center text-[#5f6370] tabular-nums text-base">{p.not_eval || '-'}</td>
+                    <td className="py-3.5 px-3 text-center">
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="w-14 bg-[#f2f2f3] rounded-full h-2 overflow-hidden">
                           <div
-                            className={`h-full rounded-full ${
-                              parseFloat(evalPct) >= 95 ? 'bg-emerald-500' :
-                              parseFloat(evalPct) >= 70 ? 'bg-blue-500' : 'bg-amber-500'
-                            }`}
+                            className="h-full rounded-full bg-[#5d2a1a]"
                             style={{ width: `${evalPct}%` }}
-                          ></div>
+                          />
                         </div>
-                        <span className="font-bold text-slate-700 text-[10px] w-9">{evalPct}%</span>
+                        <span className="font-medium text-[#5d2a1a] text-xs w-11 tabular-nums">{evalPct}%</span>
                       </div>
                     </td>
                   </tr>
@@ -973,17 +878,16 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
           </table>
         </div>
 
-        {/* Pagination Bar */}
         {pageSize < sortedProvinces.length && (
-          <div className="p-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
-            <span className="text-slate-500">
-              แสดงหน้าที่ {currentPage} จาก {totalPages} หน้า (ทั้งหมด {sortedProvinces.length} จังหวัด)
+          <div className="p-4 border-t border-[#ececec] bg-[#fafafb] flex items-center justify-between text-sm text-[#5f6370]">
+            <span>
+              หน้าที่ {currentPage} จาก {totalPages} หน้า ({sortedProvinces.length} จังหวัด)
             </span>
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1.5">
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                className="px-2.5 py-1 rounded border bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100"
+                className="px-3.5 py-1.5 rounded-full border border-[#ececec] bg-white text-[#17191c] disabled:opacity-40 hover:bg-[#fafafb] text-xs min-h-[36px]"
               >
                 ก่อนหน้า
               </button>
@@ -991,8 +895,8 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`px-2.5 py-1 rounded border text-xs font-semibold ${
-                    currentPage === page ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-slate-100'
+                  className={`px-3.5 py-1.5 rounded-full text-xs min-h-[36px] transition-all ${
+                    currentPage === page ? 'bg-[#17191c] text-white font-medium' : 'bg-white text-[#5f6370] border border-[#ececec] hover:bg-[#fafafb]'
                   }`}
                 >
                   {page}
@@ -1001,7 +905,7 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                className="px-2.5 py-1 rounded border bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100"
+                className="px-3.5 py-1.5 rounded-full border border-[#ececec] bg-white text-[#17191c] disabled:opacity-40 hover:bg-[#fafafb] text-xs min-h-[36px]"
               >
                 ถัดไป
               </button>
@@ -1010,52 +914,20 @@ export const Tab1Clinic: React.FC<Tab1ClinicProps> = ({
         )}
       </div>
 
-      {/* Tab 1 Dedicated Data Sources & Important Notes */}
+      {/* Tab Dedicated Data Sources */}
       <TabSourceReference
-        tabTitle="แท็บที่ 1: คลินิกผู้สูงอายุ (Geriatric Clinic System)"
-        accentColor="blue"
-        lastUpdated="พฤศจิกายน 2567"
+        tabTitle="ข้อมูลคลินิกผู้สูงอายุ พร้อมแสดงจำนวนเป้าหมาย รพ. 937 แห่ง"
+        lastUpdated="ปีงบประมาณ 2567–2569"
         sources={[
           {
             title: 'สถาบันเวชศาสตร์สมเด็จพระสังฆราชญาณสังวรเพื่อผู้สูงอายุ',
             dept: 'กรมการแพทย์ กระทรวงสาธารณสุข',
-            url: 'https://dmscaretools.dms.go.th',
-            displayUrl: 'dmscaretools.dms.go.th',
-            badge: 'รายงานผลการประเมินมาตรฐานคลินิกผู้สูงอายุ',
-            badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
-            description: 'ฐานข้อมูลสรุปผลการประเมินมาตรฐานคลินิกผู้สูงอายุในโรงพยาบาลสังกัดกระทรวงสาธารณสุข 937 แห่ง ครอบคลุม 5 หมวดเกณฑ์คุณภาพ',
-            fileName: 'geriatric_clinic_report.xlsx'
+            description: 'ฐานข้อมูลสรุปผลการประเมินมาตรฐานคลินิกผู้สูงอายุในโรงพยาบาลสังกัดกระทรวงสาธารณสุข 937 แห่ง ครอบคลุม 5 หมวดเกณฑ์คุณภาพ'
           },
           {
             title: 'กรมการแพทย์ กระทรวงสาธารณสุข',
             dept: 'กระทรวงสาธารณสุข',
-            url: 'https://dms.go.th',
-            displayUrl: 'dms.go.th',
-            badge: 'คู่มือและเกณฑ์มาตรฐานบริการ',
-            badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
             description: 'แนวทางการจัดตั้งและการดำเนินงานคลินิกผู้สูงอายุในโรงพยาบาลทุกระดับ (Comprehensive Geriatric Care Guidelines) รพศ./รพท./รพช.'
-          }
-        ]}
-        notes={[
-          {
-            id: 't1-scope',
-            title: '1. ขอบเขตโรงพยาบาลเป้าหมาย 937 แห่งทั่วประเทศ',
-            content: 'ครอบคลุมโรงพยาบาลสังกัดกระทรวงสาธารณสุขทุกระดับ ได้แก่ ระดับ A (รพ.ศูนย์: 34 แห่ง), ระดับ S (รพ.ทั่วไป: 56 แห่ง), ระดับ M1-M2 (รพ.ชุมชนขนาดใหญ่: 218 แห่ง), และระดับ F1-F3 (รพ.ชุมชนทั่วไปและขนาดเล็ก: 629 แห่ง)'
-          },
-          {
-            id: 't1-levels',
-            title: '2. เกณฑ์ระดับผลการประเมินมาตรฐาน 5 ระดับ',
-            content: 'แบ่งเป็น ดีเด่น (Excellent - 5 ดาว), ดีมาก (Very Good - 4 ดาว), ดี (Good - 3 ดาว), ผ่านเกณฑ์พื้นฐาน (Basic - 2 ดาว), และ ควรพัฒนา (Need Development - 1 ดาว) โดยประเมิน 5 ด้าน: บุคลากร, สถานที่/สิ่งแวดล้อม, ระบบบริการ, การมีส่วนร่วม, และผลลัพธ์การดูแล'
-          },
-          {
-            id: 't1-not-eval',
-            title: '3. สถานะโรงพยาบาลที่ยังไม่ประเมิน (119 แห่ง)',
-            content: 'โรงพยาบาลที่ยังไม่มีผลประเมินส่วนใหญ่เป็นโรงพยาบาลชุมชนขนาดเล็กระดับ F3 (เช่น รพ.เปิดใหม่ หรือมีแพทย์ประจำ 1-2 ท่าน) ซึ่งอยู่ระหว่างการพัฒนาศักยภาพบุคลากรและการเตรียมความพร้อมโครงสร้าง'
-          },
-          {
-            id: 't1-calc',
-            title: '4. การคำนวณอัตราความครอบคลุม',
-            content: 'คิดจากจำนวนโรงพยาบาลที่มีคลินิกผู้สูงอายุ (เปิดแล้ว 818 แห่ง) เทียบกับโรงพยาบาลเป้าหมายทั้งหมด 937 แห่ง คิดเป็นความครอบคลุมภาพรวมร้อยละ 87.30 ทั่วประเทศ'
           }
         ]}
       />

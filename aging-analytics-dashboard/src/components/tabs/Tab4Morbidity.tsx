@@ -1,43 +1,38 @@
 import React, { useState, useMemo } from 'react';
-import { NcdItem, ChronicTop10, PatientCauseItem, DeathCauseItem, DeathGenderItem } from '../../types';
+import { ChronicTop10, PatientCauseItem, DeathCauseItem, DeathGenderItem } from '../../types';
 import { KPICard } from '../KPICard';
 import { TabSourceReference } from '../TabSourceReference';
-import { HeartPulse, Activity, AlertOctagon, Skull, FileSpreadsheet, TrendingUp, Users } from 'lucide-react';
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, PieChart, Pie, Cell
+  Activity, Skull, Stethoscope, ShieldAlert, HeartPulse,
+  Brain, Bone, Wind, Eye, Sparkles, HeartHandshake, Droplets,
+  Users, Info
+} from 'lucide-react';
+import {
+  BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
+import { CHART_PALETTE, rechartsTooltipStyle } from '../../theme/chartTheme';
 
 interface Tab4MorbidityProps {
-  ncdData: NcdItem[];
   chronicTop10: ChronicTop10[];
   opdByYear: Record<string, PatientCauseItem[]>;
   ipdByYear: Record<string, PatientCauseItem[]>;
   deathCauses: DeathCauseItem[];
   deathGender: DeathGenderItem[];
   selectedYear: string;
+  forceSection?: 'illness' | 'mortality';
 }
 
 export const Tab4Morbidity: React.FC<Tab4MorbidityProps> = ({
-  ncdData,
   chronicTop10,
   opdByYear,
   ipdByYear,
   deathCauses,
   deathGender,
-  selectedYear
+  selectedYear,
+  forceSection
 }) => {
-  const [activeSection, setActiveSection] = useState<'ncd' | 'illness' | 'mortality'>('ncd');
-
-  // NCD Chart Data (Trends 2566 to 2569)
-  const ncdChartData = useMemo(() => {
-    return [
-      { year: '2566', ความดันโลหิตสูง: 4615969, เบาหวาน: 2144438, โรคไตเรื้อรัง: 754000, สโตรก: 247170, หัวใจขาดเลือด: 193527, ปอดอุดกั้น: 165000, มะเร็ง: 148000 },
-      { year: '2567', ความดันโลหิตสูง: 4980000, เบาหวาน: 2360000, โรคไตเรื้อรัง: 820000, สโตรก: 272000, หัวใจขาดเลือด: 215000, ปอดอุดกั้น: 178000, มะเร็ง: 160000 },
-      { year: '2568', ความดันโลหิตสูง: 5350000, เบาหวาน: 2580000, โรคไตเรื้อรัง: 890000, สโตรก: 298000, หัวใจขาดเลือด: 238000, ปอดอุดกั้น: 193000, มะเร็ง: 173000 },
-      { year: '2569', ความดันโลหิตสูง: 5720000, เบาหวาน: 2810000, โรคไตเรื้อรัง: 970000, สโตรก: 325000, หัวใจขาดเลือด: 262000, ปอดอุดกั้น: 210000, มะเร็ง: 188000 },
-    ];
-  }, []);
+  const [internalSection, setInternalSection] = useState<'all' | 'illness' | 'mortality'>('all');
+  const activeSection = forceSection || internalSection;
 
   // OPD & IPD Data for selected year
   const currentOpd = useMemo(() => {
@@ -48,421 +43,585 @@ export const Tab4Morbidity: React.FC<Tab4MorbidityProps> = ({
     return ipdByYear[selectedYear] || ipdByYear['2569'] || [];
   }, [ipdByYear, selectedYear]);
 
-  // Mortality Chart Data
+  // Mortality Chart Data sorted descending
   const mortalityChartData = useMemo(() => {
     const yearKey = `y${selectedYear}` as keyof DeathCauseItem;
-    return deathCauses.map(d => ({
-      name: d.cause,
-      icd: d.icd,
-      deaths: (d[yearKey] as number) || d.y2569,
-      ratio: d.ratio_pct
-    }));
+    return deathCauses
+      .map(d => ({
+        name: d.cause,
+        icd: d.icd,
+        deaths: (d[yearKey] as number) || d.y2569,
+        ratio: d.ratio_pct
+      }))
+      .sort((a, b) => b.deaths - a.deaths);
   }, [deathCauses, selectedYear]);
 
+  // Icon mapping for 10 chronic diseases
+  const getChronicIcon = (rank: number) => {
+    switch (rank) {
+      case 1: return HeartPulse;       // ความดันโลหิตสูง
+      case 2: return Activity;         // เบาหวาน
+      case 3: return Droplets;         // ไขมันในเลือดสูง
+      case 4: return Bone;             // ข้อเข่าเสื่อม
+      case 5: return ShieldAlert;      // ไตวายเรื้อรัง
+      case 6: return Wind;             // ปอดอุดกั้นเรื้อรัง (COPD)
+      case 7: return Brain;            // หลอดเลือดสมอง (Stroke)
+      case 8: return Sparkles;         // สมองเสื่อม (Dementia)
+      case 9: return Eye;              // ต้อกระจก
+      case 10: return HeartHandshake;  // ซึมเศร้า
+      default: return Activity;
+    }
+  };
+
+  // OPD vs IPD Top 5 comparative chart data
+  const comparativeChartData = useMemo(() => {
+    const top5Opd = currentOpd.slice(0, 5).map(item => ({
+      name: item.disease_th.length > 18 ? item.disease_th.substring(0, 18) + '...' : item.disease_th,
+      fullName: item.disease_th,
+      icd: item.icd,
+      type: 'ผู้ป่วยนอก (OPD)',
+      count: item.total,
+      pct: item.pct,
+    }));
+
+    const top5Ipd = currentIpd.slice(0, 5).map(item => ({
+      name: item.disease_th.length > 18 ? item.disease_th.substring(0, 18) + '...' : item.disease_th,
+      fullName: item.disease_th,
+      icd: item.icd,
+      type: 'ผู้ป่วยใน (IPD)',
+      count: item.total,
+      pct: item.pct,
+    }));
+
+    return { top5Opd, top5Ipd };
+  }, [currentOpd, currentIpd]);
+
   return (
-    <div className="space-y-6">
-      {/* Top Level KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <KPICard
-          title="ผู้สูงอายุป่วย NCDs รวม"
-          value="8.90 ล้านคน"
-          subtitle="ปี 2569 คิดเป็น ~75% ของผู้สูงอายุ"
-          badge="+1.5M ใน 4 ปี"
-          badgeColor="rose"
-          icon={HeartPulse}
-          variant="navy"
-        />
-        <KPICard
-          title="อันดับ 1 NCDs: ความดัน"
-          value="5,720,000 คน"
-          subtitle="ผู้สูงอายุมากกว่า 52% ป่วยเป็นโรคนี้"
-          badge="อันดับ 1 OPD"
-          badgeColor="rose"
-          icon={Activity}
-        />
-        <KPICard
-          title="อันดับ 2 NCDs: เบาหวาน"
-          value="2,810,000 คน"
-          subtitle="กว่า 65% พบร่วมกับความดันโลหิตสูง"
-          badge="เสี่ยงไตวาย/ตาเสื่อม"
-          badgeColor="amber"
-          icon={AlertOctagon}
-        />
-        <KPICard
-          title="สาเหตุการตายอันดับ 1: มะเร็ง"
-          value="68,500 ราย/ปี"
-          subtitle="คิดเป็น 14.7% ของการเสียชีวิตรวม"
-          badge="ตับ ปอด ลำไส้"
-          badgeColor="rose"
-          icon={Skull}
-        />
-        <KPICard
-          title="สาเหตุครอง รพ. IPD: ปอดบวม"
-          value="437,946 ครั้ง"
-          subtitle="อันดับ 1 การนอนโรงพยาบาล"
-          badge="ภัยเงียบติดเชื้อ"
-          badgeColor="amber"
-          icon={Activity}
-        />
+    <div className="space-y-12 text-[#17191c]">
+      {/* Editorial Section Header */}
+      <div className="space-y-2 mb-6">
+        <span className="text-xs text-[#6b6f7a] uppercase block font-medium">
+          Morbidity & Mortality Statistics · สถิติสุขภาพระดับชาติ · ปีงบประมาณ {selectedYear}
+        </span>
+        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-normal text-[#17191c] leading-[1.4] mb-2">
+          สถิติสาเหตุการป่วยและสาเหตุการตาย
+        </h2>
+        <p className="text-base text-[#5f6370] w-full leading-[1.6] mb-6">
+          วิเคราะห์ภาพรวมการรับบริการสุขภาพ (OPD/IPD 10 อันดับแรก), กลุ่ม 10 โรคเรื้อรังสำคัญ และสถิติสาเหตุการเสียชีวิต (Mortality Causes) ตามรหัสสากล ICD-10
+        </p>
       </div>
 
-      {/* View Switcher */}
-      <div className="flex items-center justify-between bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex space-x-2">
+      {/* Top Level KPIs: auto-fit full row width */}
+      <div className="kpi-grid">
+        {activeSection === 'illness' ? (
+          <>
+            <KPICard
+              title="บริการผู้ป่วยนอก (OPD)"
+              value=">38 ล้านครั้ง"
+              subtitle="ตรวจรักษาในสถานพยาบาล สธ."
+              badge="OPD Visits"
+              icon={Stethoscope}
+              variant="peach" // Accent card
+            />
+            <KPICard
+              title="สาเหตุครอง รพ. IPD: ปอดบวม"
+              value="437,946 ครั้ง"
+              subtitle="อันดับ 1 การนอนโรงพยาบาล"
+              badge="ติดเชื้อทางเดินหายใจ"
+              icon={Activity}
+              variant="neutral"
+            />
+            <KPICard
+              title="ความดันโลหิตสูง (HT)"
+              value="48.5%"
+              subtitle="โรคเรื้อรังอันดับ 1 ในผู้สูงอายุ"
+              badge="ความดันสูง"
+              icon={HeartPulse}
+              variant="neutral"
+            />
+            <KPICard
+              title="เบาหวาน (DM)"
+              value="22.8%"
+              subtitle="โรคเรื้อรังอันดับ 2"
+              badge="เบาหวาน"
+              icon={Activity}
+              variant="neutral"
+            />
+            <KPICard
+              title="ไขมันในเลือดสูง (DLP)"
+              value="34.2%"
+              subtitle="เสี่ยงหลอดเลือดหัวใจและสมอง"
+              badge="ไขมันเลือดสูง"
+              icon={Droplets}
+              variant="neutral"
+            />
+          </>
+        ) : activeSection === 'mortality' ? (
+          <>
+            <KPICard
+              title="สาเหตุการตายอันดับ 1: มะเร็ง"
+              value="68,500 ราย/ปี"
+              subtitle="14.7% ของการเสียชีวิตรวม"
+              badge="อันดับ 1 มรณกรรม"
+              icon={Skull}
+              variant="peach" // Accent card
+            />
+            <KPICard
+              title="สาเหตุการตายอันดับ 2: สโตรก"
+              value="52,100 ราย/ปี"
+              subtitle="หลอดเลือดสมอง 11.2%"
+              badge="Stroke"
+              icon={HeartPulse}
+              variant="neutral"
+            />
+            <KPICard
+              title="โรคหัวใจขาดเลือด"
+              value="36,400 ราย/ปี"
+              subtitle="7.8% ของการเสียชีวิตรวม"
+              badge="IHD"
+              icon={Activity}
+              variant="neutral"
+            />
+            <KPICard
+              title="ปอดอักเสบ/ปอดบวม"
+              value="31,200 ราย/ปี"
+              subtitle="6.7% ของการเสียชีวิตรวม"
+              badge="Pneumonia"
+              icon={Wind}
+              variant="neutral"
+            />
+            <KPICard
+              title="ความต่างตามเพศ"
+              value="ชาย 58% : หญิง 42%"
+              subtitle="เพศชายเสียชีวิตจากมะเร็งและอุบัติเหตุสูงกว่า"
+              badge="Gender Ratio"
+              icon={ShieldAlert}
+              variant="neutral"
+            />
+          </>
+        ) : (
+          <>
+            <KPICard
+              title="บริการผู้ป่วยนอก (OPD)"
+              value=">38 ล้านครั้ง"
+              subtitle="ตรวจรักษาในสถานพยาบาล สธ."
+              badge="OPD Visits"
+              icon={Stethoscope}
+              variant="peach" // 1 Accent card
+            />
+            <KPICard
+              title="สาเหตุนอน รพ. (IPD): ปอดบวม"
+              value="437,946 ครั้ง"
+              subtitle="อันดับ 1 ครองเตียง รพ."
+              badge="Admissions"
+              icon={Activity}
+              variant="neutral"
+            />
+            <KPICard
+              title="โรคเรื้อรังอันดับ 1: ความดันสูง"
+              value="48.5%"
+              subtitle="พบในผู้สูงอายุเกือบครึ่งหนึ่ง"
+              badge="Prevalence"
+              icon={HeartPulse}
+              variant="neutral"
+            />
+            <KPICard
+              title="สาเหตุการตายอันดับ 1: มะเร็ง"
+              value="68,500 ราย/ปี"
+              subtitle="14.7% ของมรณกรรมรวม"
+              badge="Mortality #1"
+              icon={Skull}
+              variant="neutral"
+            />
+            <KPICard
+              title="สัดส่วนการตายแยกเพศ"
+              value="ชาย 58% : หญิง 42%"
+              subtitle="เพศชายมีความเสี่ยงสูงกว่า"
+              badge="Gender Ratio"
+              icon={ShieldAlert}
+              variant="neutral"
+            />
+          </>
+        )}
+      </div>
+
+      {/* Sub-view Switcher if not forced */}
+      {!forceSection && (
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={() => setActiveSection('ncd')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeSection === 'ncd'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100'
+            onClick={() => setInternalSection('all')}
+            className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all min-h-[44px] ${
+              activeSection === 'all'
+                ? 'bg-[#17191c] text-white shadow-none'
+                : 'bg-transparent border border-[#ececec] text-[#17191c] hover:bg-[#fafafb]'
             }`}
           >
-            <HeartPulse className="w-4 h-4" />
-            <span>1. สถิติโรค NCDs (2566–2569)</span>
+            ภาพรวมทั้งหมด (ทั้งการป่วยและตาย)
           </button>
           <button
-            onClick={() => setActiveSection('illness')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+            onClick={() => setInternalSection('illness')}
+            className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all min-h-[44px] ${
               activeSection === 'illness'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100'
+                ? 'bg-[#17191c] text-white shadow-none'
+                : 'bg-transparent border border-[#ececec] text-[#17191c] hover:bg-[#fafafb]'
             }`}
           >
-            <Activity className="w-4 h-4" />
-            <span>2. 10 อันดับการป่วย (OPD / IPD)</span>
+            สถิติการเจ็บป่วย (OPD / IPD 10 อันดับแรก)
           </button>
           <button
-            onClick={() => setActiveSection('mortality')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+            onClick={() => setInternalSection('mortality')}
+            className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all min-h-[44px] ${
               activeSection === 'mortality'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100'
+                ? 'bg-[#17191c] text-white shadow-none'
+                : 'bg-transparent border border-[#ececec] text-[#17191c] hover:bg-[#fafafb]'
             }`}
           >
-            <Skull className="w-4 h-4" />
-            <span>3. 10 อันดับสาเหตุการเสียชีวิต</span>
+            สถิติสาเหตุการเสียชีวิต (Mortality Causes)
           </button>
         </div>
-        <div className="text-xs text-slate-500 hidden md:block">
-          ข้อมูลแสดงสำหรับปี: <strong>{selectedYear}</strong>
-        </div>
-      </div>
+      )}
 
-      {/* Section 1: NCDs */}
-      {activeSection === 'ncd' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left: NCD Multi-Line Chart (8 cols) */}
-            <div className="lg:col-span-8 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-base font-bold text-slate-800">
-                    แนวโน้มการเพิ่มขึ้นของผู้สูงอายุป่วยโรคไม่ติดต่อเรื้อรัง (NCDs)
-                  </h3>
-                  <p className="text-xs text-slate-500">ปี พ.ศ. 2566 – 2569 (จำนวนผู้ป่วยสะสมรายโรค)</p>
-                </div>
-                <span className="text-xs px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-semibold border border-rose-200">
-                  CAGR +7.0% ถึง +9.0%
-                </span>
-              </div>
-
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={ncdChartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="year" tick={{ fontSize: 11 }} />
-                    <YAxis
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`}
-                    />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }}
-                      formatter={(val: any, name: any) => [`${Number(val).toLocaleString()} คน`, name]}
-                    />
-                    <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                    <Line type="monotone" dataKey="ความดันโลหิตสูง" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="เบาหวาน" stroke="#f97316" strokeWidth={2.5} dot={{ r: 3 }} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="โรคไตเรื้อรัง" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="สโตรก" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="หัวใจขาดเลือด" stroke="#06b6d4" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Right: NCD Summary Table (4 cols) */}
-            <div className="lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+      {/* Section 1: Top 10 Illnesses (OPD & IPD) */}
+      {(activeSection === 'all' || activeSection === 'illness') && (
+        <div className="space-y-8">
+          {/* Top 10 Chronic Diseases Card Grid with Icons */}
+          <div className="bg-[#f2f2f3] p-6 rounded-[24px] space-y-4">
+            <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-800 mb-1">สถิติผู้ป่วย NCDs รายโรค</h3>
-                <p className="text-xs text-slate-500 mb-3">ปี 2566 เปรียบเทียบปี 2569</p>
+                <h3 className="text-lg font-medium text-[#17191c] flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-[#17191c]" />
+                  10 อันดับโรคและปัญหาสุขภาพสำคัญเฉพาะผู้สูงอายุ 60 ปีขึ้นไป
+                </h3>
+                <p className="text-sm text-[#5f6370]">
+                  สรุปอัตราความชุก (%) ลักษณะอาการและความสำคัญทางการแพทย์ (ข้อมูล มส.ผส. และ สธ.)
+                </p>
+              </div>
+              <span className="text-xs px-3.5 py-1.5 rounded-full bg-white text-[#5f6370] border border-[#ececec] hidden sm:inline font-medium">
+                ICD-10 Clinical Profile
+              </span>
+            </div>
 
-                <div className="space-y-2.5">
-                  {ncdData.slice(0, 6).map(n => {
-                    const growth = (((n.y2569 - n.y2566) / n.y2566) * 100).toFixed(1);
-                    return (
-                      <div key={n.disease} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-                        <div className="flex items-center justify-between font-semibold text-slate-800 mb-1">
-                          <span>{n.disease}</span>
-                          <span className="text-rose-600">+{growth}%</span>
-                        </div>
-                        <div className="flex items-center justify-between text-slate-500 text-[11px]">
-                          <span>ปี 66: {(n.y2566 / 1000).toFixed(0)}k</span>
-                          <span className="font-bold text-slate-900">ปี 69: {(n.y2569 / 1000000).toFixed(2)}M คน</span>
-                        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+              {chronicTop10.map(c => {
+                const Icon = getChronicIcon(c.rank);
+
+                return (
+                  <div
+                    key={c.rank}
+                    className="p-4 rounded-2xl bg-white border border-[#ececec] flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium bg-[#f2f2f3] text-[#17191c] tabular-nums">
+                          {c.rank}
+                        </span>
+                        <span className="text-xs font-mono text-[#5f6370] bg-[#f2f2f3] px-2.5 py-0.5 rounded-full font-medium">
+                          {c.icd}
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
 
-              <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
-                📌 <strong>ที่มาการคาดการณ์:</strong> อ้างอิง สศช., การสำรวจสุขภาพ NHES ครั้งที่ 5 และ 6, ฐาน HDC สธ. และแผนปฏิบัติการ NCDs 2566–2570
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-7 h-7 rounded-full bg-[#f2f2f3] flex items-center justify-center text-[#17191c] shrink-0">
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <h4 className="font-medium text-[#17191c] text-base leading-snug break-words">
+                          {c.disease}
+                        </h4>
+                      </div>
 
-      {/* Section 2: Top 10 Illnesses (OPD & IPD) */}
-      {activeSection === 'illness' && (
-        <div className="space-y-6">
-          {/* Top 10 Chronic Diseases Card Grid */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 className="text-base font-bold text-slate-800 mb-1">
-              10 อันดับโรคเรื้อรังและปัญหาสุขภาพสำคัญเฉพาะผู้สูงอายุ 60 ปีขึ้นไป
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              สรุปอัตราความชุก (%) ลักษณะอาการและความสำคัญทางการแพทย์ (มส.ผส. และ สธ.)
-            </p>
+                      <div className="text-sm mb-1.5 flex items-center gap-1.5">
+                        <span className="text-[#5f6370]">ความชุก:</span>
+                        <span className="font-medium text-[#5d2a1a] text-base tabular-nums leading-[1.35]">{c.prevalence}</span>
+                      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-              {chronicTop10.map(c => (
-                <div key={c.rank} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-800 font-bold text-xs flex items-center justify-center">
-                        {c.rank}
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-400 bg-white px-1.5 py-0.5 rounded border">
-                        {c.icd}
-                      </span>
+                      <p className="text-sm text-[#5f6370] leading-[1.6]">
+                        {c.clinical_significance}
+                      </p>
                     </div>
-                    <div className="font-bold text-slate-900 text-xs mb-1 line-clamp-1">{c.disease}</div>
-                    <div className="text-[11px] font-bold text-rose-600 mb-1.5">ความชุก {c.prevalence}</div>
-                    <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed">{c.clinical_significance}</p>
+
+                    <div className="mt-3.5 pt-2.5 border-t border-[#ececec] flex items-center justify-between text-xs text-[#6b6f7a]">
+                      <span>กลุ่มผู้สูงอายุไทย</span>
+                      <span className="text-[#17191c] tabular-nums font-medium">อันดับ {c.rank}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          {/* OPD vs IPD Tables */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: OPD Top 10 */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="p-4 bg-blue-50/50 border-b border-slate-200 flex items-center justify-between">
+          {/* Comparative Bar Chart Visualization for Top OPD vs IPD in #5d2a1a */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+            {/* Left: OPD Chart */}
+            <div className="bg-[#f2f2f3] p-6 rounded-[24px] space-y-4 min-w-0 w-full">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-slate-900 text-sm">
-                    สาเหตุการป่วยผู้ป่วยนอก (OPD) 10 อันดับแรก ปี {selectedYear}
+                  <h4 className="font-medium text-[#17191c] text-base flex items-center gap-2">
+                    <Stethoscope className="w-5 h-5 text-[#17191c]" />
+                    5 อันดับบริการผู้ป่วยนอก (OPD) สูงสุด ปี {selectedYear}
                   </h4>
-                  <p className="text-[11px] text-slate-500">จำแนกตามจำนวนครั้งที่มารับบริการ (HDC)</p>
+                  <p className="text-xs text-[#5f6370] mt-1">จำนวนครั้งที่มารับบริการในสถานพยาบาล สธ. (Visits)</p>
                 </div>
-                <span className="text-xs px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">OPD Visits</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100 text-slate-600 font-semibold text-[11px]">
-                    <tr>
-                      <th className="py-2.5 px-3">อันดับ</th>
-                      <th className="py-2.5 px-3">กลุ่มโรค (ICD-10)</th>
-                      <th className="py-2.5 px-3 text-right">จำนวนรวม (ครั้ง)</th>
-                      <th className="py-2.5 px-3 text-right">สัดส่วน (%)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {currentOpd.map(item => (
-                      <tr key={`opd-${item.rank}`} className="hover:bg-slate-50">
-                        <td className="py-2 px-3 font-bold text-slate-700">{item.rank}</td>
-                        <td className="py-2 px-3">
-                          <div className="font-semibold text-slate-900">{item.disease_th}</div>
-                          <div className="text-[10px] font-mono text-slate-400">{item.icd}</div>
-                        </td>
-                        <td className="py-2 px-3 text-right font-medium text-slate-800">
-                          {item.total.toLocaleString()}
-                        </td>
-                        <td className="py-2 px-3 text-right font-semibold text-blue-600">{item.pct}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Right: IPD Top 10 */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="p-4 bg-rose-50/50 border-b border-slate-200 flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm">
-                    สาเหตุการป่วยผู้ป่วยใน (IPD) 10 อันดับแรก ปี {selectedYear}
-                  </h4>
-                  <p className="text-[11px] text-slate-500">จำแนกตามจำนวนครั้งที่นอนโรงพยาบาล (HDC)</p>
-                </div>
-                <span className="text-xs px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold">IPD Admissions</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100 text-slate-600 font-semibold text-[11px]">
-                    <tr>
-                      <th className="py-2.5 px-3">อันดับ</th>
-                      <th className="py-2.5 px-3">กลุ่มโรค (ICD-10)</th>
-                      <th className="py-2.5 px-3 text-right">จำนวนรวม (ครั้ง)</th>
-                      <th className="py-2.5 px-3 text-right">สัดส่วน (%)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {currentIpd.map(item => (
-                      <tr key={`ipd-${item.rank}`} className="hover:bg-slate-50">
-                        <td className="py-2 px-3 font-bold text-slate-700">{item.rank}</td>
-                        <td className="py-2 px-3">
-                          <div className="font-semibold text-slate-900">{item.disease_th}</div>
-                          <div className="text-[10px] font-mono text-slate-400">{item.icd}</div>
-                        </td>
-                        <td className="py-2 px-3 text-right font-medium text-slate-800">
-                          {item.total.toLocaleString()}
-                        </td>
-                        <td className="py-2 px-3 text-right font-semibold text-rose-600">{item.pct}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Section 3: 10 Mortality Causes */}
-      {activeSection === 'mortality' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left: Mortality Bar Chart (7 cols) */}
-            <div className="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-base font-bold text-slate-800">
-                    10 อันดับสาเหตุการเสียชีวิตของประชากรสูงอายุไทย (ปี {selectedYear})
-                  </h3>
-                  <p className="text-xs text-slate-500">จำนวนผู้เสียชีวิต (คน/ปี) และสัดส่วนต่อการตายรวม</p>
-                </div>
+                <span className="text-xs px-3 py-1 rounded-full bg-white text-[#5f6370] border border-[#ececec]">OPD Top 5</span>
               </div>
 
-              <div className="h-80 w-full">
+              <div className="h-72 w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={mortalityChartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                    <XAxis type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={160} />
+                  <BarChart data={comparativeChartData.top5Opd} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#ececec" />
+                    <XAxis type="number" tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} tick={{ fontSize: 14, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 14, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} width={160} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }}
-                      formatter={(val: any, name: any, item: any) => [
-                        `${Number(val).toLocaleString()} ราย (${item.payload.ratio}% ของการตายรวม)`,
-                        'จำนวนผู้เสียชีวิต'
+                      contentStyle={rechartsTooltipStyle}
+                      formatter={(val: any, _name: any, item: any) => [
+                        `${Number(val).toLocaleString()} ครั้ง (${item.payload.pct}%)`,
+                        item.payload.fullName
                       ]}
                     />
-                    <Bar dataKey="deaths" fill="#e11d48" radius={[0, 6, 6, 0]} isAnimationActive={false} />
+                    <Bar dataKey="count" fill="#5d2a1a" radius={[0, 4, 4, 0]} isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Right: Gender Differences in Mortality (5 cols) */}
-            <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <h3 className="text-base font-bold text-slate-800 mb-1">
-                  เปรียบเทียบสาเหตุการตาย: เพศชาย vs เพศหญิง
-                </h3>
-                <p className="text-xs text-slate-500 mb-3">วิเคราะห์ความแตกต่างทางระบาดวิทยาและพฤติกรรมสุขภาพ</p>
-
-                <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                  {deathGender.map(g => (
-                    <div key={g.cause} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-                      <div className="flex items-center justify-between font-bold text-slate-800 mb-1">
-                        <span>{g.cause}</span>
-                        <span className="text-[11px] text-slate-500">
-                          ชาย <strong className="text-blue-600">{g.male_pct}</strong> | หญิง <strong className="text-pink-600">{g.female_pct}</strong>
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-500 leading-relaxed mb-0.5">{g.epi_diff}</p>
-                      <span className="text-[10px] text-slate-400 italic">ปัจจัย: {g.behavior_factors}</span>
-                    </div>
-                  ))}
+            {/* Right: IPD Chart */}
+            <div className="bg-[#f2f2f3] p-6 rounded-[24px] space-y-4 min-w-0 w-full">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium text-[#17191c] text-base flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-[#17191c]" />
+                    5 อันดับสาเหตุนอนโรงพยาบาล (IPD) สูงสุด ปี {selectedYear}
+                  </h4>
+                  <p className="text-xs text-[#5f6370] mt-1">จำนวนครั้งการนอนโรงพยาบาลในสถานพยาบาล สธ. (Admissions)</p>
                 </div>
+                <span className="text-xs px-3 py-1 rounded-full bg-white text-[#5f6370] border border-[#ececec]">IPD Top 5</span>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
-                📌 <strong>จุดเน้น:</strong> เพศชายมีอัตราตายจากโรคมะเร็งและอุบัติเหตุสูงกว่าเพศหญิงอย่างชัดเจน ขณะที่เพศหญิงมีอายุขัยยืนยาวกว่า จึงพบอัตราการตายจากสโตรกและไตวายในวัยปลายสูงกว่า
+              <div className="h-72 w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={comparativeChartData.top5Ipd} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#ececec" />
+                    <XAxis type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 14, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 14, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} width={160} />
+                    <Tooltip
+                      contentStyle={rechartsTooltipStyle}
+                      formatter={(val: any, _name: any, item: any) => [
+                        `${Number(val).toLocaleString()} ครั้ง (${item.payload.pct}%)`,
+                        item.payload.fullName
+                      ]}
+                    />
+                    <Bar dataKey="count" fill="#5d2a1a" radius={[0, 4, 4, 0]} isAnimationActive={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* OPD vs IPD Full 10 Tables */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+            {/* Left: OPD Top 10 Table */}
+            <div className="bg-white rounded-[24px] border border-[#ececec] overflow-hidden min-w-0 w-full shadow-sm">
+              <div className="p-5 bg-[#fafafb] border-b border-[#ececec] flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium text-[#17191c] text-base">
+                    สาเหตุการป่วยผู้ป่วยนอก (OPD) 10 อันดับแรก ปี {selectedYear}
+                  </h4>
+                  <p className="text-xs text-[#5f6370] mt-0.5">จำแนกตามจำนวนครั้งที่มารับบริการ (HDC)</p>
+                </div>
+                <span className="text-xs px-3 py-1 rounded-full bg-white text-[#5f6370] border border-[#ececec]">10 อันดับ</span>
+              </div>
+              <div className="overflow-x-auto max-h-[560px]">
+                <table className="w-full text-left text-base text-[#17191c]">
+                  <thead className="bg-[#fafafb] text-[#5f6370] font-medium text-sm border-b border-[#ececec] sticky top-0 z-10">
+                    <tr>
+                      <th className="py-3.5 px-4 text-center w-16">อันดับ</th>
+                      <th className="py-3.5 px-4">กลุ่มโรค (ICD-10)</th>
+                      <th className="py-3.5 px-4 text-right">จำนวนรวม (ครั้ง)</th>
+                      <th className="py-3.5 px-4 text-right">สัดส่วน (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#ececec]">
+                    {currentOpd.map(item => (
+                      <tr key={`opd-${item.rank}`} className="hover:bg-[#fafafb] transition-colors h-[54px]">
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium bg-[#f2f2f3] text-[#17191c] tabular-nums">
+                            {item.rank}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="font-medium text-[#17191c]">{item.disease_th}</div>
+                          <div className="text-xs font-mono text-[#5f6370] mt-0.5">{item.icd} • {item.disease_en}</div>
+                        </td>
+                        <td className="py-3.5 px-4 text-right tabular-nums text-[#17191c]">
+                          {item.total.toLocaleString()}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-medium text-[#5d2a1a] tabular-nums">{item.pct}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Right: IPD Top 10 Table */}
+            <div className="bg-white rounded-[24px] border border-[#ececec] overflow-hidden min-w-0 w-full shadow-sm">
+              <div className="p-5 bg-[#fafafb] border-b border-[#ececec] flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium text-[#17191c] text-base">
+                    สาเหตุการป่วยผู้ป่วยใน (IPD) 10 อันดับแรก ปี {selectedYear}
+                  </h4>
+                  <p className="text-xs text-[#5f6370] mt-0.5">จำแนกตามจำนวนครั้งที่นอนโรงพยาบาล (HDC)</p>
+                </div>
+                <span className="text-xs px-3 py-1 rounded-full bg-white text-[#5f6370] border border-[#ececec]">10 อันดับ</span>
+              </div>
+              <div className="overflow-x-auto max-h-[560px]">
+                <table className="w-full text-left text-base text-[#17191c]">
+                  <thead className="bg-[#fafafb] text-[#5f6370] font-medium text-sm border-b border-[#ececec] sticky top-0 z-10">
+                    <tr>
+                      <th className="py-3.5 px-4 text-center w-16">อันดับ</th>
+                      <th className="py-3.5 px-4">กลุ่มโรค (ICD-10)</th>
+                      <th className="py-3.5 px-4 text-right">จำนวนรวม (ครั้ง)</th>
+                      <th className="py-3.5 px-4 text-right">สัดส่วน (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#ececec]">
+                    {currentIpd.map(item => (
+                      <tr key={`ipd-${item.rank}`} className="hover:bg-[#fafafb] transition-colors h-[54px]">
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium bg-[#f2f2f3] text-[#17191c] tabular-nums">
+                            {item.rank}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="font-medium text-[#17191c]">{item.disease_th}</div>
+                          <div className="text-xs font-mono text-[#5f6370] mt-0.5">{item.icd} • {item.disease_en}</div>
+                        </td>
+                        <td className="py-3.5 px-4 text-right tabular-nums text-[#17191c]">
+                          {item.total.toLocaleString()}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-medium text-[#5d2a1a] tabular-nums">{item.pct}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Tab 4 Dedicated Data Sources & Important Notes */}
+      {/* Section 2: 10 Mortality Causes */}
+      {(activeSection === 'all' || activeSection === 'mortality') && (
+        <div className="space-y-8 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+            {/* Left: Mortality Bar Chart in #5d2a1a (7 cols) */}
+            <div className="lg:col-span-7 bg-[#f2f2f3] p-6 rounded-[24px] space-y-4 min-w-0 w-full">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium text-[#17191c] flex items-center gap-2">
+                    <Skull className="w-5 h-5 text-[#17191c]" />
+                    10 อันดับสาเหตุการเสียชีวิตของประชากรสูงอายุไทย (ปี {selectedYear})
+                  </h3>
+                  <p className="text-sm text-[#5f6370] mt-1">จำนวนผู้เสียชีวิต (คน/ปี) และสัดส่วนต่อการตายรวม อ้างอิงใบมรณบัตร</p>
+                </div>
+                <span className="text-xs px-3 py-1 rounded-full bg-white text-[#5f6370] border border-[#ececec]">
+                  สถิติมรณกรรม
+                </span>
+              </div>
+
+              <div className="h-96 w-full min-w-0">
+                <ResponsiveContainer width="100%" height={380}>
+                  <BarChart data={mortalityChartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#ececec" />
+                    <XAxis type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 14, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 14, fill: '#5f6370', fontFamily: "'Inter', 'Noto Sans Thai', sans-serif" }} width={180} />
+                    <Tooltip
+                      contentStyle={rechartsTooltipStyle}
+                      formatter={(val: any, _name: any, item: any) => [
+                        `${Number(val).toLocaleString()} ราย (${item.payload.ratio}% ของการตายรวม)`,
+                        'จำนวนผู้เสียชีวิต'
+                      ]}
+                    />
+                    <Bar dataKey="deaths" fill="#5d2a1a" radius={[0, 4, 4, 0]} isAnimationActive={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="p-4 bg-white rounded-2xl border border-[#ececec] text-sm text-[#5f6370] flex items-start gap-2.5">
+                <Info className="w-5 h-5 text-[#17191c] shrink-0 mt-0.5" />
+                <span>
+                  โรคมะเร็งทุกชนิดและโรคหลอดเลือดสมองเป็น 2 สาเหตุหลัก คิดเป็นมากกว่า <strong className="text-[#17191c] font-medium">1 ใน 4 (25.9%)</strong> ของการเสียชีวิตทั้งหมดในผู้สูงอายุไทย
+                </span>
+              </div>
+            </div>
+
+            {/* Right: Gender Differences in Mortality (5 cols) */}
+            <div className="lg:col-span-5 bg-[#f2f2f3] p-6 rounded-[24px] flex flex-col justify-between min-w-0 w-full">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-lg font-medium text-[#17191c] flex items-center gap-2">
+                    <Users className="w-5 h-5 text-[#17191c]" />
+                    เปรียบเทียบสาเหตุการตาย: ชาย vs หญิง
+                  </h3>
+                  <span className="text-xs text-[#6b6f7a]">สัดส่วนแยกเพศ</span>
+                </div>
+                <p className="text-sm text-[#5f6370] mb-4">วิเคราะห์ความแตกต่างทางระบาดวิทยาและพฤติกรรมเสี่ยง</p>
+
+                <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                  {deathGender.map(g => {
+                    const mNum = parseFloat(g.male_pct.replace('%', '')) || 50;
+                    const fNum = parseFloat(g.female_pct.replace('%', '')) || 50;
+
+                    return (
+                      <div key={g.cause} className="p-4 rounded-2xl bg-white border border-[#ececec] text-sm space-y-2.5">
+                        <div className="flex items-center justify-between font-medium text-[#17191c]">
+                          <span className="text-base">{g.cause}</span>
+                          <div className="flex items-center gap-2 text-sm tabular-nums">
+                            <span className="text-[#5d2a1a] font-medium">ชาย {g.male_pct}</span>
+                            <span className="text-[#ececec]">|</span>
+                            <span className="text-[#5f6370] font-medium">หญิง {g.female_pct}</span>
+                          </div>
+                        </div>
+
+                        {/* Dual colored visual progress bar: #5d2a1a (male) & #b9826a (female) */}
+                        <div className="w-full h-2 rounded-full overflow-hidden flex bg-[#f2f2f3]">
+                          <div
+                            className="bg-[#5d2a1a] h-full transition-all"
+                            style={{ width: `${mNum}%` }}
+                            title={`ชาย ${g.male_pct}`}
+                          />
+                          <div
+                            className="bg-[#b9826a] h-full transition-all"
+                            style={{ width: `${fNum}%` }}
+                            title={`หญิง ${g.female_pct}`}
+                          />
+                        </div>
+
+                        <p className="text-sm text-[#5f6370] leading-relaxed">{g.epi_diff}</p>
+                        <span className="text-xs text-[#6b6f7a] block">ปัจจัย: {g.behavior_factors}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab Dedicated Data Sources */}
       <TabSourceReference
-        tabTitle="แท็บที่ 4: โรคและสาเหตุการป่วยและตาย (Morbidity & Mortality Statistics)"
-        accentColor="rose"
+        tabTitle="สถิติสาเหตุการป่วยและสาเหตุการตาย"
         lastUpdated="ปีงบประมาณ 2566–2569"
         sources={[
           {
-            title: 'ระบบคลังข้อมูลด้านการแพทย์และสุขภาพ (HDC) แฟ้ม Chronic, OPD, IPD',
+            title: 'ระบบคลังข้อมูลด้านการแพทย์และสุขภาพ (HDC) แฟ้ม OPD, IPD',
             dept: 'สำนักงานปลัดกระทรวงสาธารณสุข (สป.สธ.)',
-            url: 'https://hdcservice.moph.go.th',
-            displayUrl: 'hdcservice.moph.go.th',
-            badge: 'สถิติ NCDs, ผู้ป่วยนอก (OPD) & ผู้ป่วยใน (IPD)',
-            badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
-            description: 'สถิติการวินิจฉัยโรคไม่ติดต่อเรื้อรัง (ความดันโลหิตสูง, เบาหวาน, ไตวายเรื้อรัง, หลอดเลือดสมอง, หลอดเลือดหัวใจ) และ 10 อันดับโรคที่มารับบริการในสถานพยาบาล',
-            fileName: '3. สถิติผู้สูงอายุ_NCDs_2566-2569.xlsx & 4. สถิติสาเหตุการป่วย_10อันดับแรก_2566-2569.xlsx'
-          },
-          {
-            title: 'กองโรคไม่ติดต่อ กรมควบคุมโรค',
-            dept: 'กระทรวงสาธารณสุข',
-            url: 'https://ddc.moph.go.th',
-            displayUrl: 'ddc.moph.go.th',
-            badge: 'รายงานสถานการณ์ NCDs',
-            badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
-            description: 'องค์ความรู้ สถิติการเฝ้าระวังพฤติกรรมเสี่ยง และแนวทางการควบคุมป้องกันโรคไม่ติดต่อเรื้อรังในประชากรสูงอายุไทย'
+            description: 'สถิติ 10 อันดับโรคที่มารับบริการในสถานพยาบาล จำแนกตามจำนวนครั้งที่มารับบริการ (Visits) และจำนวนครั้งการนอนโรงพยาบาล (Admissions)'
           },
           {
             title: 'กองยุทธศาสตร์และแผนงาน สป.สธ. & สำนักบริหารการทะเบียน กรมการปกครอง',
             dept: 'กระทรวงสาธารณสุข & กระทรวงมหาดไทย',
-            url: 'https://spd.moph.go.th',
-            displayUrl: 'spd.moph.go.th',
-            badge: 'สถิติสาเหตุการตาย (Vital Statistics)',
-            badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
-            description: 'สถิติสาเหตุการตายของประชากรไทย อ้างอิงจากใบมรณบัตร (Death Certificate) ผ่านการตรวจประมวลรหัสสาเหตุการตายสากล ICD-10',
-            fileName: '5. สถิติสาเหตุการตายในผู้สูงอายุ.xlsx'
-          }
-        ]}
-        notes={[
-          {
-            id: 't4-icd10',
-            title: '1. การจำแนกโรคตามมาตรฐานสากล ICD-10',
-            content: 'ใช้รหัส ICD-10 สากล ได้แก่ โรคความดันโลหิตสูง (I10-I15), โรคเบาหวาน (E10-E14), โรคไตเรื้อรัง (N18), โรคหลอดเลือดสมอง (I60-I69), โรคหัวใจขาดเลือด (I20-I25), โรคปอดอุดกั้นเรื้อรัง (J44)'
-          },
-          {
-            id: 't4-opd-ipd',
-            title: '2. ความแตกต่างระหว่างหน่วยนับผู้ป่วยนอก (OPD) และผู้ป่วยใน (IPD)',
-            content: 'ผู้ป่วยนอก (OPD) นับเป็น "จำนวนครั้งการรับบริการ (Visits)" ซึ่งผู้ป่วย 1 คนอาจรับบริการหลายครั้งในรอบปี ส่วนผู้ป่วยใน (IPD) นับเป็น "จำนวนครั้งการนอนโรงพยาบาล (Admissions)"'
-          },
-          {
-            id: 't4-mortality-gender',
-            title: '3. ข้อสังเกตความแตกต่างตามเพศในสาเหตุการตาย',
-            content: 'เพศชายมีอัตราการเสียชีวิตจากโรคมะเร็งปอด โรคมะเร็งตับ และโรคปอดอุดกั้นเรื้อรังสูงกว่าเพศหญิงอย่างชัดเจน มีความสัมพันธ์กับประวัติการสูบบุหรี่และดื่มแอลกอฮอล์ ขณะที่เพศหญิงมีสัดส่วนการตายจากโรคหลอดเลือดสมองและไตวายในวัยปลายสูงกว่า สัมพันธ์กับอายุขัยเฉลี่ยที่ยืนยาวกว่า'
-          },
-          {
-            id: 't4-multimorbidity',
-            title: '4. ภาวะพหุพยาธิสภาพ (Multimorbidity)',
-            content: 'ผู้สูงอายุไทยส่วนใหญ่ (กว่า 68%) มีโรคประจำตัวเรื้อรังมากกว่า 1 โรคขึ้นไป โดยคู่โรคที่พบบ่อยที่สุดคือ โรคความดันโลหิตสูงร่วมกับโรคเบาหวาน'
+            description: 'สถิติสาเหตุการตายของประชากรไทย อ้างอิงจากใบมรณบัตร (Death Certificate) ผ่านการตรวจประมวลรหัสสาเหตุการตายสากล ICD-10'
           }
         ]}
       />

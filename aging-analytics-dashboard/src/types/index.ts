@@ -101,6 +101,44 @@ export interface DemographicProjection {
   };
 }
 
+export interface ScreeningProvinceDomainItem {
+  name: string;
+  screened: number;
+  normal: number;
+  risk: number;
+  risk_pct: number;
+}
+
+export interface ScreeningProvinceData {
+  zone_code: string;
+  zone: string;
+  province_code: string;
+  province: string;
+  target: number;
+  screened_all_9: number;
+  total_risk_cases: number;
+  top_risk_key: string;
+  top_risk_name: string;
+  top_risk_pct: number;
+  top_risk_count: number;
+  domains: {
+    vision: ScreeningProvinceDomainItem;
+    urine: ScreeningProvinceDomainItem;
+    hearing: ScreeningProvinceDomainItem;
+    adl: ScreeningProvinceDomainItem;
+    cognition: ScreeningProvinceDomainItem;
+    depression: ScreeningProvinceDomainItem;
+    movement: ScreeningProvinceDomainItem;
+    oral: ScreeningProvinceDomainItem;
+    nutrition: ScreeningProvinceDomainItem;
+  };
+}
+
+export interface ScreeningByYear {
+  zones?: ScreeningZoneData[];
+  provinces: ScreeningProvinceData[];
+}
+
 export interface DomainResult {
   screened: number;
   normal: number;

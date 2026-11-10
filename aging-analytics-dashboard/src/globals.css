@@ -1,0 +1,224 @@
+html {
+  font-size: clamp(16px, 0.5vw + 10px, 19px);
+  font-synthesis: none !important;
+  -webkit-font-smoothing: antialiased !important;
+  text-rendering: optimizeLegibility !important;
+}
+
+:root {
+  /* Colors */
+  --color-ink-black: #17191c;
+  --color-paper-white: #ffffff;
+  --color-mist-gray: #f2f2f3;
+  --color-fog-white: #fafafb;
+  --color-slate-gray: #5f6370; /* Enhanced contrast for secondary text */
+  --color-ash-gray: #6b6f7a;   /* Enhanced contrast for small tags/labels */
+  --color-smoke-gray: #a3a6af; /* For placeholders only */
+  --color-blush-peach: #fbe1d1;
+  --color-sienna-brown: #5d2a1a;
+  --color-border: #ececec;
+
+  /* Typography — Font Families */
+  --font-signifier: 'Source Serif 4', 'Noto Serif Thai', Georgia, serif;
+  --font-sohne: 'Inter', 'Noto Sans Thai', system-ui, sans-serif;
+
+  /* Typography — Scalable Rem Type Scale (root 16px = 1rem) */
+  --text-xs: 0.875rem;    /* 14px: badges, tags, footnotes — minimum readable text */
+  --text-sm: 0.9375rem;   /* 15px: labels, card subtitles, table headers, chart ticks */
+  --text-base: 1.0625rem; /* 17px: body copy, table cells, lists */
+  --text-lg: 1.25rem;     /* 20px: card titles, chart titles */
+  --text-xl: 1.625rem;    /* 26px: section headers */
+  --text-2xl: clamp(2.25rem, 3.5vw, 2.75rem); /* 36px–44px: tab hero headlines (H1/H2) */
+  --text-stat: 3rem;      /* 48px: highlighted KPI statistics */
+
+  /* Typography — Weights (Strictly no weight 700 or above) */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+
+  /* Spacing */
+  --spacing-unit: 4px;
+  --spacing-4: 4px;
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-28: 28px;
+  --spacing-32: 32px;
+  --spacing-40: 40px;
+  --spacing-64: 64px;
+  --spacing-80: 80px;
+  --spacing-96: 96px;
+  --spacing-124: 124px;
+  --spacing-128: 128px;
+  --spacing-160: 160px;
+
+  /* Layout */
+  --page-max-width: 2200px;
+  --section-gap: 80px;
+  --card-padding: 20px;
+  --element-gap: 8px;
+
+  /* Border Radius */
+  --radius-sm: 0.01px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-2xl-2: 20px;
+  --radius-3xl: 24px;
+
+  /* Named Radii */
+  --radius-cards: 24px;
+  --radius-images: 12px;
+  --radius-inputs: 16px;
+  --radius-buttons: 9999px;
+  --radius-smallcards: 16px;
+  --radius-elevatedcards: 20px;
+
+  /* Shadows */
+  --shadow-subtle: oklab(0 0 0 / 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.08) 0px 4px 24px 0px;
+  --shadow-subtle-2: oklab(0 0 0 / 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 8px 40px 0px;
+  --shadow-subtle-3: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+
+  /* Surfaces */
+  --surface-canvas: #ffffff;
+  --surface-card-mist: #f2f2f3;
+  --surface-section-fog: #fafafb;
+  --surface-accent-blush: #fbe1d1;
+  --surface-elevated-white: #ffffff;
+}
+
+*, *::before, *::after {
+  font-synthesis: none !important;
+  letter-spacing: normal !important;
+}
+
+body {
+  background-color: var(--surface-canvas);
+  color: var(--color-ink-black);
+  font-family: var(--font-sohne);
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: normal !important;
+  font-variant-numeric: tabular-nums;
+  overflow-x: clip;
+}
+
+/* Tab Headlines (H1/H2) and Display Titles: Noto Serif Thai + Source Serif 4, weight 400 */
+h1, h2, .font-serif-headline {
+  font-family: var(--font-signifier) !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  letter-spacing: normal !important;
+  color: var(--color-ink-black);
+}
+
+/* Card Titles and Section Headings: Noto Sans Thai + Inter, weight 500 */
+h3, h4, h5, h6 {
+  font-family: var(--font-sohne) !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  letter-spacing: normal !important;
+  color: var(--color-ink-black);
+}
+
+/* Tabular Numbers */
+.tabular-nums, [class*="tabular-nums"], table, th, td {
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Ensure font-weight never exceeds 500 (No weight 700 or above) */
+b, strong, .font-bold, .font-semibold, .font-extrabold, .font-black {
+  font-weight: 500 !important;
+}
+
+/* Chart text styling for Recharts/SVG & tooltips */
+svg text, .recharts-text, .recharts-legend-item-text, .recharts-tooltip-wrapper, .recharts-default-tooltip {
+  font-family: var(--font-sohne) !important;
+  font-synthesis: none !important;
+  letter-spacing: normal !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Steep Neutral Card: background #f2f2f3, radius 24px, no shadow, no border */
+.card-neutral {
+  background-color: var(--color-mist-gray);
+  border-radius: var(--radius-cards);
+  border: none;
+  box-shadow: none;
+}
+
+/* Steep Accent Peach Card: background #fbe1d1, text & strokes #5d2a1a, radius 24px, no shadow */
+.card-peach {
+  background-color: var(--color-blush-peach);
+  color: var(--color-sienna-brown);
+  border-radius: var(--radius-cards);
+  border: none;
+  box-shadow: none;
+}
+
+/* Steep Floating Product Artifact: background #ffffff, radius 20px, subtle shadow */
+.card-floating {
+  background-color: var(--color-paper-white);
+  border-radius: var(--radius-elevatedcards);
+  box-shadow: 0 0 0 1px rgba(4, 23, 43, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Steep Pill Button Filled */
+.btn-pill-filled {
+  background-color: var(--color-ink-black);
+  color: var(--color-paper-white);
+  border-radius: var(--radius-buttons);
+  padding: 8px 20px;
+  font-family: var(--font-sohne);
+  font-weight: 400;
+  transition: all 0.15s ease;
+}
+
+/* Steep Pill Button Ghost */
+.btn-pill-ghost {
+  background-color: transparent;
+  color: var(--color-ink-black);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-buttons);
+  padding: 8px 20px;
+  font-family: var(--font-sohne);
+  font-weight: 400;
+  transition: all 0.15s ease;
+}
+
+.btn-pill-ghost:hover {
+  background-color: var(--color-fog-white);
+  border-color: var(--color-ink-black);
+}
+
+/* Page Shell: Unified responsive wrapper for full-width layout with ultrawide max-width */
+.page-shell {
+  width: 100%;
+  max-width: 2200px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 3vw, 64px);
+  box-sizing: border-box;
+}
+
+/* KPI Responsive Grid: auto-fit minmax(220px, 1fr) to fill available row width */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+/* Ensure responsive charts and grid items fill width without overflowing */
+.recharts-responsive-container {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Hide scrollbar helper */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

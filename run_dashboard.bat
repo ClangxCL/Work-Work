@@ -10,7 +10,11 @@ echo.
 echo กำลังเริ่มต้นระบบแดชบอร์ด...
 echo.
 
-cd /d "%~dp0aging-analytics-dashboard"
+if exist "%~dp0aging-analytics-dashboard\package.json" (
+    cd /d "%~dp0aging-analytics-dashboard"
+) else if exist "%~dp0package.json" (
+    cd /d "%~dp0"
+)
 
 :: ตรวจสอบ node_modules
 if not exist "node_modules" (
