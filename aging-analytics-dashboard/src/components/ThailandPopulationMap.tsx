@@ -227,8 +227,8 @@ export const ThailandPopulationMap: React.FC<ThailandPopulationMapProps> = ({
         </div>
       </div>
 
-      {/* SVG Canvas Container */}
-      <div className="map-canvas-container relative w-full flex justify-center items-center py-1 overflow-hidden min-w-0">
+      {/* SVG Canvas Container with Responsive Min-Height */}
+      <div className="map-canvas-container relative w-full min-h-[360px] sm:min-h-[460px] flex justify-center items-center py-1 overflow-hidden min-w-0 touch-manipulation">
         {/* Floating Tooltip */}
         {hoveredProvince && (
           <div
@@ -348,24 +348,27 @@ export const ThailandPopulationMap: React.FC<ThailandPopulationMapProps> = ({
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setZoomLevel(prev => Math.min(prev + 0.2, 1.6))}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors"
+            className="w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors"
             title="ซูมเข้า"
+            aria-label="ซูมเข้า"
           >
-            <ZoomIn className="w-4 h-4" />
+            <ZoomIn className="w-5 h-5" />
           </button>
           <button
             onClick={() => setZoomLevel(prev => Math.max(prev - 0.2, 0.8))}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors"
+            className="w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors"
             title="ซูมออก"
+            aria-label="ซูมออก"
           >
-            <ZoomOut className="w-4 h-4" />
+            <ZoomOut className="w-5 h-5" />
           </button>
           <button
             onClick={() => setZoomLevel(1)}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors"
+            className="w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors"
             title="รีเซ็ตขนาด"
+            aria-label="รีเซ็ตขนาด"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-5 h-5" />
           </button>
         </div>
 

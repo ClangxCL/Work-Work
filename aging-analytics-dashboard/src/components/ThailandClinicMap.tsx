@@ -118,22 +118,11 @@ export const ThailandClinicMap: React.FC<ThailandClinicMapProps> = ({
   const activePctIndicator = hoveredProvince ? hoveredProvince.evalPctNum : selectedPctNum;
 
   return (
-    <div className="relative flex flex-col justify-between items-center bg-[#f2f2f3] rounded-[24px] p-5 overflow-hidden shadow-none min-h-[600px] text-[#17191c]">
-      {/* Top Header: Title & Continuous Gradient Bar */}
-      <div className="w-full pb-3 mb-2 border-b border-[#ececec]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div>
-            <div className="font-medium text-[#17191c] text-sm">
-              แผนผังภูมิศาสตร์ความครอบคลุมคลินิกผู้สูงอายุ 77 จังหวัด
-            </div>
-            <div className="text-xs text-[#5f6370] mt-0.5">
-              ไล่เฉดสีตามร้อยละการประเมินมาตรฐานคลินิก (Choropleth สเกล #fbe1d1 → #5d2a1a)
-            </div>
-          </div>
-        </div>
-
+    <div className="relative flex flex-col justify-between items-center w-full flex-1 min-h-0 text-[#17191c]">
+      {/* Top Header: Continuous Gradient Bar */}
+      <div className="w-full pb-3 mb-2 shrink-0">
         {/* Continuous Gradient Legend Scale Bar */}
-        <div className="mt-3 pt-2.5 border-t border-[#ececec] flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between text-xs text-[#5f6370] font-normal px-0.5 tabular-nums">
             <span>0%</span>
             <span>25%</span>
@@ -163,8 +152,8 @@ export const ThailandClinicMap: React.FC<ThailandClinicMapProps> = ({
         </div>
       </div>
 
-      {/* SVG Canvas Container */}
-      <div className="map-canvas-container relative w-full flex justify-center items-center py-1 overflow-hidden min-w-0">
+      {/* SVG Canvas Container with Responsive Min-Height */}
+      <div className="map-canvas-container relative w-full flex-1 min-h-[380px] sm:min-h-[460px] flex justify-center items-center py-1 overflow-hidden min-w-0 touch-manipulation">
         {/* Floating Interactive Tooltip */}
         {hoveredProvince && (
           <div
@@ -291,44 +280,54 @@ export const ThailandClinicMap: React.FC<ThailandClinicMapProps> = ({
       </div>
 
       {/* Map Footer Bar with Zoom Controls & Instructions */}
-      <div className="w-full flex items-center justify-between pt-3 border-t border-[#ececec] text-xs text-[#5f6370]">
+      <div className="w-full flex items-center justify-between pt-3 border-t border-[#ececec] text-xs text-[#5f6370] shrink-0 mt-auto">
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setZoomLevel(prev => Math.min(prev + 0.2, 1.6))}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors"
+            className="w-10 h-10 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors"
             title="ซูมเข้า"
+            aria-label="ซูมเข้า"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
           <button
             onClick={() => setZoomLevel(prev => Math.max(prev - 0.2, 0.8))}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors"
+            className="w-10 h-10 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors"
             title="ย่อแผนที่"
+            aria-label="ย่อแผนที่"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
           <button
             onClick={() => setZoomLevel(1)}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors"
+            className="w-10 h-10 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-full bg-white hover:bg-[#fafafb] text-[#17191c] border border-[#ececec] transition-colors"
             title="รีเซ็ตขนาด"
+            aria-label="รีเซ็ตขนาด"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
+          <span className="text-xs text-[#5f6370] ml-2 hidden sm:inline">
+            แสดง: <strong className="text-[#17191c] font-medium">{activeZone === 'ALL' ? 'ทั้ง 77 จังหวัด' : `เขต ${activeZone.replace(/^0+/, '')}`}</strong>
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
-          {selectedProvinceName && (
-            <button
-              onClick={() => onSelectProvince('')}
-              className="text-xs text-[#17191c] bg-white border border-[#ececec] px-3.5 py-1.5 rounded-full hover:bg-[#fafafb] transition-all font-medium"
-            >
-              <span>✕ ดูภาพรวม</span>
-            </button>
+          {selectedProvinceName ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[#17191c] font-medium">จ.{selectedProvinceName}</span>
+              <button
+                onClick={() => onSelectProvince('')}
+                className="text-xs text-[#17191c] bg-white border border-[#ececec] px-3 py-1 rounded-full hover:bg-[#fafafb] transition-all font-medium"
+              >
+                ✕ ภาพรวม
+              </button>
+            </div>
+          ) : (
+            <span className="text-xs text-[#5f6370] flex items-center gap-1.5">
+              <Compass className="w-4 h-4 text-[#17191c]" />
+              <span>คลิกที่จังหวัดเพื่อเจาะลึก รพ. →</span>
+            </span>
           )}
-          <span className="text-xs text-[#5f6370] flex items-center gap-1.5">
-            <Compass className="w-4 h-4 text-[#17191c]" />
-            <span>คลิกที่จังหวัดเพื่อเจาะลึก รพ. รายจังหวัด →</span>
-          </span>
         </div>
       </div>
     </div>

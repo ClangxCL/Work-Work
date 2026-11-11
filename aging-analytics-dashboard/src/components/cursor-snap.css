@@ -1,0 +1,94 @@
+.snap-dot,
+.snap-hl {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+}
+
+.snap-dot {
+  z-index: 9999;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background-color: #0d9488;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
+  transition: opacity 0.2s ease, width 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), margin 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.snap-hl {
+  z-index: 9998;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(13, 148, 136, 0.7);
+  background-color: transparent;
+  transition: opacity 0.2s ease, background-color 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.snap-visible .snap-dot,
+.snap-visible .snap-hl {
+  opacity: 1;
+}
+
+/* Hovering clickable target: expands, 18% cyan-teal background, 2px border, 6px outer glow */
+.snap-hover .snap-hl {
+  background-color: rgba(13, 148, 136, 0.18);
+  border: 2px solid #0d9488;
+  box-shadow: 0 0 6px rgba(13, 148, 136, 0.55);
+}
+
+.snap-hover .snap-dot {
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  margin-left: -3px;
+}
+
+/* Mouse down (held): background intensifies to 38% */
+.snap-down.snap-hover .snap-hl,
+.snap-down .snap-hl {
+  background-color: rgba(13, 148, 136, 0.38);
+  box-shadow: 0 0 8px rgba(13, 148, 136, 0.75);
+}
+
+/* Textfield hover: hide custom cursor, use system text cursor */
+.snap-text .snap-dot,
+.snap-text .snap-hl {
+  opacity: 0 !important;
+}
+
+/* Hide default cursor on desktop when snap cursor is active */
+html.has-snap-cursor,
+html.has-snap-cursor * {
+  cursor: none !important;
+}
+
+html.has-snap-cursor input,
+html.has-snap-cursor textarea,
+html.has-snap-cursor select,
+html.has-snap-cursor [contenteditable="true"] {
+  cursor: text !important;
+}
+
+/* Accessibility: prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .snap-dot,
+  .snap-hl {
+    transition: none !important;
+  }
+}
+
+/* Touch devices: never display */
+@media (hover: none), (pointer: coarse) {
+  .snap-dot,
+  .snap-hl {
+    display: none !important;
+  }
+}

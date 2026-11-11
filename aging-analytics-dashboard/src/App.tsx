@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import rawData from './data/dashboardData.json';
 import { DashboardRootData } from './types';
 import { Header } from './components/Header';
+import CursorSnap from './components/CursorSnap';
 import { Tab2Population } from './components/tabs/Tab2Population';
 import { Tab3Screening } from './components/tabs/Tab3Screening';
 import { Tab4Morbidity } from './components/tabs/Tab4Morbidity';
@@ -37,6 +38,9 @@ export function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-[#17191c]" style={{ overflowX: 'clip' }}>
+      {/* Snap Highlight Custom Cursor */}
+      <CursorSnap />
+
       {/* Global Navigation Header (Full-Bleed Banner + 1200px Pill Tabs) */}
       <Header
         activeTab={activeTab}
@@ -49,7 +53,7 @@ export function App() {
 
       {/* Main Content Container: full-width page-shell (max-width: 2200px, padding-inline: clamp(16px, 3vw, 64px)) */}
       <main className="page-shell flex-1 py-10 my-4">
-        {/* Tab 1: การคัดกรองผู้สูงอายุ 9 ด้าน (Basic/Community Screen) */}
+        {/* Tab 1: ความเสี่ยงต่อปัญหาสุขภาพ ผู้สูงอายุ 9 ด้าน */}
         {activeTab === 1 && (
           <Tab3Screening
             screeningByYear={data.screening_9domains}
@@ -113,9 +117,6 @@ export function App() {
               <span>รวบรวม วิเคราะห์ และประมวลผลโดย </span>
               <strong className="text-[#17191c] font-medium">กลุ่มงานสารสนเทศระบบสุขภาพด้านผู้สูงอายุ</strong>{' '}
               <span>สถาบันเวชศาสตร์สมเด็จพระสังฆราชญาณสังวรเพื่อผู้สูงอายุ กรมการแพทย์ กระทรวงสาธารณสุข</span>
-            </div>
-            <div className="text-[#6b6f7a] text-xs">
-              DMS Elderly Health Analytics
             </div>
           </div>
         </div>

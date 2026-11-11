@@ -18,6 +18,18 @@ html {
   --color-sienna-brown: #5d2a1a;
   --color-border: #ececec;
 
+  /* 10-level Rank Importance Scale (Top 10 Chronic Diseases) */
+  --rank-1: #5d2a1a;
+  --rank-2: #74371f;
+  --rank-3: #8a4730;
+  --rank-4: #9e5a42;
+  --rank-5: #b27058;
+  --rank-6: #c48a72;
+  --rank-7: #d5a58f;
+  --rank-8: #e3bba6;
+  --rank-9: #eed0be;
+  --rank-10: #fbe1d1;
+
   /* Typography — Font Families */
   --font-signifier: 'Source Serif 4', 'Noto Serif Thai', Georgia, serif;
   --font-sohne: 'Inter', 'Noto Sans Thai', system-ui, sans-serif;
@@ -29,7 +41,10 @@ html {
   --text-lg: 1.25rem;     /* 20px: card titles, chart titles */
   --text-xl: 1.625rem;    /* 26px: section headers */
   --text-2xl: clamp(2.25rem, 3.5vw, 2.75rem); /* 36px–44px: tab hero headlines (H1/H2) */
-  --text-stat: 3rem;      /* 48px: highlighted KPI statistics */
+  --text-stat: clamp(2rem, 1.4rem + 2vw, 3rem); /* Fluid KPI statistics */
+  --text-fluid-h1: clamp(1.5rem, 1rem + 2.2vw, 2.75rem);
+  --text-fluid-h2: clamp(1.125rem, 1rem + 0.6vw, 1.5rem);
+  --text-fluid-kpi: clamp(2rem, 1.4rem + 2vw, 3rem);
 
   /* Typography — Weights (Strictly no weight 700 or above) */
   --font-weight-regular: 400;
@@ -90,6 +105,12 @@ html {
 *, *::before, *::after {
   font-synthesis: none !important;
   letter-spacing: normal !important;
+  box-sizing: border-box;
+}
+
+/* Enforce min-width: 0 on all flex and grid items to avoid overflow */
+.min-w-0, .grid > *, .flex > * {
+  min-width: 0;
 }
 
 body {
@@ -101,15 +122,49 @@ body {
   letter-spacing: normal !important;
   font-variant-numeric: tabular-nums;
   overflow-x: clip;
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
-/* Tab Headlines (H1/H2) and Display Titles: Noto Serif Thai + Source Serif 4, weight 400 */
-h1, h2, .font-serif-headline {
+/* Mobile typography floor: body not < 15px, badges not < 13px */
+@media (max-width: 639px) {
+  body {
+    font-size: 15px;
+  }
+  .text-xs {
+    font-size: 13px !important;
+  }
+}
+
+/* Fluid Headlines */
+h1, .text-fluid-h1 {
   font-family: var(--font-signifier) !important;
+  font-size: var(--text-fluid-h1) !important;
   font-weight: 400 !important;
-  line-height: 1.4 !important;
+  line-height: 1.35 !important;
+  color: var(--color-ink-black);
+}
+
+h2, .text-fluid-h2, .font-serif-headline {
+  font-family: var(--font-signifier) !important;
+  font-size: var(--text-fluid-h1) !important;
+  font-weight: 400 !important;
+  line-height: 1.35 !important;
   letter-spacing: normal !important;
   color: var(--color-ink-black);
+}
+
+.card-title, .text-fluid-card-title {
+  font-size: var(--text-fluid-h2) !important;
+}
+
+.kpi-value, .text-stat {
+  font-size: var(--text-fluid-kpi) !important;
 }
 
 /* Card Titles and Section Headings: Noto Sans Thai + Inter, weight 500 */
@@ -191,21 +246,80 @@ svg text, .recharts-text, .recharts-legend-item-text, .recharts-tooltip-wrapper,
   border-color: var(--color-ink-black);
 }
 
-/* Page Shell: Unified responsive wrapper for full-width layout with ultrawide max-width */
+/* Page Shell: Mobile 16px, Tablet 24px, Desktop clamp(24px, 3vw, 64px) */
 .page-shell {
   width: 100%;
   max-width: 2200px;
   margin-inline: auto;
-  padding-inline: clamp(16px, 3vw, 64px);
+  padding-inline: 16px;
   box-sizing: border-box;
 }
 
-/* KPI Responsive Grid: auto-fit minmax(220px, 1fr) to fill available row width */
+@media (min-width: 640px) {
+  .page-shell {
+    padding-inline: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-shell {
+    padding-inline: clamp(24px, 3vw, 64px);
+  }
+}
+
+/* KPI Responsive Grid:
+   - >=1440px: 5 equal columns
+   - 1024-1439px: 3 cols (row 1: 3 cards, row 2: 2 cards centered/balanced with equal widths)
+   - 640-1023px: 2 cols (row 3: last card spans 2 cols for balance)
+   - <640px: 1 col
+*/
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 20px;
   width: 100%;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .kpi-grid > *:nth-child(5):last-child {
+    grid-column: span 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .kpi-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 20px;
+  }
+  .kpi-grid > *:nth-child(1),
+  .kpi-grid > *:nth-child(2),
+  .kpi-grid > *:nth-child(3) {
+    grid-column: span 2;
+  }
+  .kpi-grid > *:nth-child(4),
+  .kpi-grid > *:nth-child(5) {
+    grid-column: span 3;
+  }
+}
+
+@media (min-width: 1440px) {
+  .kpi-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .kpi-grid > * {
+    grid-column: auto !important;
+  }
+}
+
+/* Smooth Touch Scrolling */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Ensure responsive charts and grid items fill width without overflowing */
@@ -222,3 +336,1084 @@ svg text, .recharts-text, .recharts-legend-item-text, .recharts-tooltip-wrapper,
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* 9 Domains Responsive Grid:
+   - >=1600px: 9 columns in a single row
+   - 640-1599px: 3x3 columns (repeat(3, minmax(0, 1fr)))
+   - <640px: horizontal scroll snap (148px per card)
+*/
+.domain-grid {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  gap: 12px;
+  width: 100%;
+  padding-bottom: 4px;
+  align-items: stretch;
+}
+
+.domain-grid::-webkit-scrollbar {
+  display: none;
+}
+.domain-grid {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.domain-grid > .domain-card-item {
+  flex: 0 0 148px;
+  min-width: 148px;
+  width: 148px;
+  scroll-snap-align: start;
+  container-type: inline-size;
+  height: auto;
+  display: flex;
+}
+
+@media (min-width: 640px) {
+  .domain-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    overflow-x: visible;
+    padding-bottom: 0;
+    align-items: stretch;
+  }
+  .domain-grid > .domain-card-item {
+    flex: unset;
+    min-width: 0;
+    width: 100%;
+    grid-column: span 1 !important;
+    grid-column-start: auto !important;
+    display: block;
+  }
+}
+
+@media (min-width: 1600px) {
+  .domain-grid {
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    gap: 12px;
+    align-items: stretch;
+  }
+}
+
+/* Domain Card Internal CSS Grid (No overlapping, robust flow) */
+.domain-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "icon pct"
+    "name name"
+    "count count"
+    "bar bar";
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 6px;
+  padding: 12px 14px;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  text-align: left;
+  background-color: var(--color-paper-white, #ffffff);
+  border: 1px solid var(--color-border, #ececec);
+  color: var(--color-ink-black, #17191c);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  font-synthesis: none !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
+/* Hover (fine pointer only) */
+@media (hover: hover) and (pointer: fine) {
+  .domain-card:not(.is-selected):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: #d9d9dc;
+  }
+}
+
+.domain-card:active {
+  transform: scale(0.98);
+}
+
+.domain-card:focus-visible {
+  outline: 2px solid #17191c;
+  outline-offset: 2px;
+}
+
+/* Selected state: box-shadow: 0 0 0 2px #fbe1d1 (no outline that squeezes content) */
+.domain-card.is-selected {
+  background-color: #17191c;
+  border-color: #17191c;
+  color: #ffffff;
+  box-shadow: 0 0 0 2px #fbe1d1;
+}
+
+/* Icon inside 36x36px peach circle */
+.domain-card .domain-icon {
+  grid-area: icon;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 9999px;
+  background-color: #fbe1d1;
+  color: #5d2a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Percentage (Serif font, weight 400, end-aligned) */
+.domain-card .domain-pct {
+  grid-area: pct;
+  justify-self: end;
+  font-family: var(--font-signifier, 'Source Serif 4', 'Noto Serif Thai', serif);
+  font-weight: 400;
+  font-size: clamp(1.0625rem, 0.9rem + 0.3vw, 1.25rem);
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+  color: #17191c;
+}
+
+.domain-card.is-selected .domain-pct {
+  color: #fbe1d1;
+}
+
+/* Domain Name (Noto Sans Thai / Inter, weight 500, min 2 lines) */
+.domain-card .domain-name {
+  grid-area: name;
+  font-family: var(--font-sohne, 'Inter', 'Noto Sans Thai', sans-serif);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.35;
+  min-height: calc(1.35em * 2);
+  display: flex;
+  align-items: center;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: #17191c;
+}
+
+.domain-card.is-selected .domain-name {
+  color: #ffffff;
+}
+
+/* Cases count */
+.domain-card .domain-count {
+  grid-area: count;
+  font-family: var(--font-sohne, 'Inter', 'Noto Sans Thai', sans-serif);
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #5f6370;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.domain-card.is-selected .domain-count {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Mini 3px progress bar inside card */
+.domain-card .domain-bar {
+  grid-area: bar;
+  height: 3px;
+  border-radius: 9999px;
+  background-color: #ececec;
+  overflow: hidden;
+  width: 100%;
+}
+
+.domain-card.is-selected .domain-bar {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+.domain-card .domain-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background-color: #5d2a1a;
+  transition: width 0.6s ease-out;
+}
+
+.domain-card.is-selected .domain-bar-fill {
+  background-color: #fbe1d1;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .domain-card,
+  .domain-card:hover,
+  .domain-bar-fill {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* Container query: card width < 170px (e.g. mobile 148px) moves % or hides icon to prevent collision */
+@container (max-width: 170px) {
+  .domain-card {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "pct"
+      "name"
+      "count"
+      "bar";
+    row-gap: 4px;
+    padding: 10px 12px;
+  }
+  .domain-card .domain-icon {
+    display: none;
+  }
+  .domain-card .domain-pct {
+    justify-self: start;
+    font-size: 1.125rem;
+  }
+}
+
+/* ==========================================================================
+   Map Card Header, Metric Selector Pills & Risk Legend
+   ========================================================================== */
+
+.map-metric-scroll-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.map-metric-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+@media (max-width: 639px) {
+  .map-metric-group {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .map-metric-pill {
+    scroll-snap-align: start;
+  }
+}
+
+@media (min-width: 640px) {
+  .map-metric-group {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
+.map-metric-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px 0 8px;
+  border-radius: 9999px;
+  font-family: var(--font-sohne, 'Inter', 'Noto Sans Thai', sans-serif);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: max-content;
+  background-color: #ffffff;
+  border: 1px solid #ececec;
+  color: #17191c;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  user-select: none;
+}
+
+.map-metric-pill:hover {
+  background-color: #fafafb;
+}
+
+.map-metric-pill.is-selected {
+  background-color: #17191c;
+  color: #ffffff;
+  border-color: #17191c;
+}
+
+.map-metric-pill:focus-visible {
+  outline: 2px solid #17191c;
+  outline-offset: 2px;
+}
+
+/* Map Risk Scale Legend & Container Query */
+.map-legend-container {
+  container-type: inline-size;
+  width: 100%;
+}
+
+.map-legend-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+  width: 100%;
+}
+
+@container (max-width: 700px) {
+  .map-legend-grid {
+    display: flex;
+    justify-content: space-between;
+  }
+  .map-legend-mid {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   Rotating Gradient Ring Light (Uiverse Style)
+   ========================================================================== */
+
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+:root {
+  --ring-1: #fbe1d1;
+  --ring-2: #b9826a;
+  --ring-3: #5d2a1a;
+  --ring-4: #17191c;
+}
+
+@keyframes spin-ring {
+  0% {
+    --angle: 0deg;
+  }
+  100% {
+    --angle: 360deg;
+  }
+}
+
+.kpi-card {
+  --angle: 135deg;
+  container-type: inline-size;
+  position: relative;
+  padding: 3px;
+  border-radius: 24px;
+  background: conic-gradient(
+    from var(--angle),
+    var(--ring-1),
+    var(--ring-2),
+    var(--ring-3),
+    var(--ring-4),
+    var(--ring-3),
+    var(--ring-2),
+    var(--ring-1)
+  );
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100%;
+  box-shadow: none !important;
+  border: none !important;
+  transition: transform 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  text-align: left;
+}
+
+/* Glow effect using ::before */
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--angle),
+    var(--ring-1),
+    var(--ring-2),
+    var(--ring-3),
+    var(--ring-4),
+    var(--ring-3),
+    var(--ring-2),
+    var(--ring-1)
+  );
+  filter: blur(18px);
+  opacity: 0;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+
+/* Featured / Rank 1 card: always spins */
+.kpi-card.is-always-spin {
+  animation: spin-ring 4s linear infinite;
+}
+
+.kpi-card.is-always-spin::before {
+  animation: spin-ring 4s linear infinite;
+  opacity: 0.25;
+}
+
+.kpi-card.is-always-spin:hover::before,
+.kpi-card.is-always-spin:focus-visible::before {
+  opacity: 0.45;
+}
+
+/* Other cards: start spinning on hover / focus-visible */
+@media (hover: hover) {
+  .kpi-card:not(.is-always-spin):hover,
+  .kpi-card:not(.is-always-spin):focus-visible,
+  .kpi-card:not(.is-always-spin):focus-within {
+    animation: spin-ring 4s linear infinite;
+  }
+
+  .kpi-card:not(.is-always-spin):hover::before,
+  .kpi-card:not(.is-always-spin):focus-visible::before,
+  .kpi-card:not(.is-always-spin):focus-within::before {
+    animation: spin-ring 4s linear infinite;
+    opacity: 0.35;
+  }
+}
+
+/* Touch devices (hover: none): non-featured cards do not spin */
+@media (hover: none) {
+  .kpi-card:not(.is-always-spin) {
+    animation: none;
+    --angle: 135deg;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .kpi-card,
+  .kpi-card::before,
+  .kpi-card.is-always-spin {
+    animation: none !important;
+    --angle: 135deg !important;
+  }
+}
+
+/* Fallback for browsers not supporting conic-gradient or @property */
+@supports not (background: conic-gradient(from 1turn, red, blue)) {
+  .kpi-card {
+    background: linear-gradient(135deg, var(--ring-1), var(--ring-2), var(--ring-3), var(--ring-4), var(--ring-1));
+  }
+  .kpi-card::before {
+    background: linear-gradient(135deg, var(--ring-1), var(--ring-2), var(--ring-3), var(--ring-4), var(--ring-1));
+  }
+}
+
+/* Inner card: border-radius 21px, inset 3px (via padding: 3px on parent) */
+.kpi-card__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 21px;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: [label] auto [value] auto [desc] 1fr [tag] auto;
+  row-gap: 10px;
+  padding: 22px 24px;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+@media (max-width: 639px) {
+  .kpi-card__inner {
+    padding: 18px 20px;
+  }
+}
+
+@container (max-width: 260px) {
+  .kpi-stat-value {
+    font-size: 2rem !important;
+  }
+  .kpi-stat-unit {
+    font-size: 0.875rem !important;
+  }
+}
+
+.kpi-card:focus-visible {
+  outline: 2px solid #17191c;
+  outline-offset: 2px;
+}
+
+/* Utility classes for typography line-breaking */
+.nowrap {
+  white-space: nowrap !important;
+}
+
+.text-wrap-pretty {
+  word-break: normal;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+}
+
+/* ==========================================================================
+   Top 10 Chronic Diseases Cards (10-level Importance Scale)
+   ========================================================================== */
+
+.chronic-card {
+  --rank-color: #5d2a1a;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--rank-color) 14%, #fff) 0%, #ffffff 55%);
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Ranks 1–3: highlighted with 1.5px colored border and soft shadow */
+.chronic-card.is-top-rank {
+  border: 1.5px solid var(--rank-color);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--rank-color) 25%, transparent);
+}
+
+/* Ranks 4–10: clean 1px border */
+.chronic-card:not(.is-top-rank) {
+  border: 1px solid #ececec;
+  box-shadow: none;
+}
+
+@media (hover: hover) {
+  .chronic-card:hover {
+    transform: translateY(-3px);
+  }
+  .chronic-card.is-top-rank:hover {
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--rank-color) 32%, transparent);
+  }
+  .chronic-card:not(.is-top-rank):hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chronic-card,
+  .chronic-card:hover {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+.chronic-top-bar {
+  height: 6px;
+  width: 100%;
+  background-color: var(--rank-color);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+/* Chronic Diseases Grid */
+.chronic-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  width: 100%;
+  align-items: stretch;
+}
+
+@media (min-width: 768px) {
+  .chronic-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .chronic-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+/* ==========================================================================
+   Ranking Tables (OPD & IPD 10 Top Causes)
+   ========================================================================== */
+
+.ranking-table-card {
+  container-type: inline-size;
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #ececec;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+/* Wide Container (>= 640px): 4-column Grid */
+@container (min-width: 640px) {
+  .ranking-table-header {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) minmax(130px, max-content) minmax(150px, max-content);
+    column-gap: 16px;
+    align-items: center;
+    padding: 14px 20px;
+    background-color: #fafafb;
+    border-bottom: 1px solid #ececec;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #5f6370;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .ranking-table-row {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) minmax(130px, max-content) minmax(150px, max-content);
+    column-gap: 16px;
+    align-items: center;
+    padding: 14px 20px;
+    min-height: 64px;
+    transition: background-color 150ms ease;
+  }
+
+  .ranking-table-row:hover {
+    background-color: #fafafb;
+  }
+
+  .ranking-desktop-cols {
+    display: contents;
+  }
+
+  .ranking-mobile-row {
+    display: none !important;
+  }
+}
+
+/* Narrow Container (< 640px): 2-Tier Stack */
+@container (max-width: 639px) {
+  .ranking-table-header {
+    display: none !important;
+  }
+
+  .ranking-desktop-cols {
+    display: none !important;
+  }
+
+  .ranking-table-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    min-height: 64px;
+    transition: background-color 150ms ease;
+  }
+
+  .ranking-table-row:hover {
+    background-color: #fafafb;
+  }
+
+  .ranking-mobile-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Mortality Causes Section (10 Top Death Causes & Gender Comparison)
+   ========================================================================== */
+
+.mortality-card {
+  container-type: inline-size;
+  width: 100%;
+}
+
+.mortality-row {
+  border-radius: 16px;
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 200ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 150ms ease;
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .mortality-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  }
+}
+
+@container (min-width: 540px) {
+  .mortality-row {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) max-content;
+    column-gap: 16px;
+    align-items: center;
+    min-height: 56px;
+    padding: 10px 14px;
+  }
+
+  .mortality-desktop-layout {
+    display: contents;
+  }
+
+  .mortality-mobile-layout {
+    display: none !important;
+  }
+}
+
+@container (max-width: 539px) {
+  .mortality-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .mortality-desktop-layout {
+    display: none !important;
+  }
+
+  .mortality-mobile-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+}
+
+.mortality-bar-track {
+  height: 14px;
+  border-radius: 9999px;
+  background-color: #ececec;
+  overflow: hidden;
+  width: 100%;
+}
+
+.mortality-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mortality-row,
+  .mortality-row:hover,
+  .mortality-bar-fill {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* ==========================================================================
+   100 Deaths Infographic
+   ========================================================================== */
+
+.infographic-box {
+  container-type: inline-size;
+  width: 100%;
+}
+
+@container (min-width: 620px) {
+  .infographic-content {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .infographic-grid-wrap {
+    flex-shrink: 0;
+  }
+}
+
+@container (max-width: 619px) {
+  .infographic-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .infographic-grid-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+}
+
+/* ==========================================================================
+   Slim Scrollbar Utility (Peach/Sienna Theme)
+   ========================================================================== */
+
+.slim-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #d5a58f transparent;
+  scrollbar-gutter: stable;
+}
+
+.slim-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.slim-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.slim-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #d5a58f;
+  border-radius: 9999px;
+}
+
+.slim-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #b27058;
+}
+
+/* ==========================================================================
+   Tab Header Illustration & Animations
+   ========================================================================== */
+
+@keyframes tabSlideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes tabFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.tab-illustration-wrapper {
+  animation: tabSlideInRight 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  flex: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tab-illustration-img {
+  animation: tabFloat 6s ease-in-out infinite;
+  will-change: transform;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  height: auto;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Responsive Image Sizes */
+@media (min-width: 1024px) {
+  .tab-illustration-img,
+  .tab-illustration-skeleton {
+    width: clamp(280px, 28vw, 440px);
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023.98px) {
+  .tab-illustration-wrapper {
+    margin-top: 16px;
+    width: 100%;
+  }
+  .tab-illustration-img,
+  .tab-illustration-skeleton {
+    width: 320px;
+  }
+}
+
+@media (max-width: 639.98px) {
+  .tab-illustration-wrapper {
+    margin-top: 16px;
+    width: 100%;
+  }
+  .tab-illustration-img,
+  .tab-illustration-skeleton {
+    width: 240px;
+  }
+}
+
+/* Landscape Mobile Height Constraint: Hide if viewport height < 700px */
+@media (max-width: 639.98px) and (max-height: 699.98px) {
+  .tab-illustration-wrapper {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-illustration-wrapper,
+  .tab-illustration-img {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ==========================================================================
+   Hero Section Typography & Thai Word Boundary Wrapping
+   ========================================================================== */
+
+.hero h1,
+.hero p,
+.tab-hero h1,
+.tab-hero p {
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  line-break: auto;
+  hyphens: none;
+}
+
+.hero h1,
+.tab-hero h1 {
+  text-wrap: balance !important; /* Two lines balanced evenly without mid-word breaks */
+}
+
+.hero p,
+.tab-hero p {
+  text-wrap: pretty !important;
+}
+
+/* Hero text width & responsive */
+.tab-hero__text {
+  width: 100%;
+}
+
+@media (min-width: 1025px) {
+  .tab-hero__text {
+    max-width: min(62%, 860px);
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 1024px) {
+  .tab-hero__text {
+    max-width: 100% !important;
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Neumorphism Main Navigation Tabs (.main-tabs-bar, .main-tab)
+   ========================================================================== */
+
+.main-tabs-bar {
+  background: #e8e8e8 !important;
+  padding: 16px clamp(16px, 3vw, 48px);
+  border-bottom: 1px solid #dcdcdc;
+  position: relative;
+  z-index: 40;
+}
+
+.main-tabs-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+}
+
+.main-tab {
+  flex: 1 1 0px; /* กว้างเท่ากัน 3 ปุ่ม เต็มความกว้าง */
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #090909;
+  padding: 0.7em 1.7em;
+  font-size: clamp(16px, 1.1vw + 10px, 19px);
+  font-weight: 500;
+  border-radius: 0.5em;
+  background: #e8e8e8;
+  cursor: pointer;
+  border: 1px solid #e8e8e8;
+  transition: all 0.3s;
+  box-shadow: 6px 6px 12px #c5c5c5, -6px -6px 12px #ffffff;
+  word-break: normal;
+  overflow-wrap: normal;
+  line-break: auto;
+  hyphens: none;
+  text-wrap: balance;
+  min-height: 52px;
+  text-decoration: none;
+  user-select: none;
+}
+
+.main-tab-text {
+  display: inline-block;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.main-tab:hover {
+  color: #5d2a1a;
+}
+
+.main-tab:active,
+.main-tab.is-active,
+.main-tab[aria-selected="true"] {
+  color: #5d2a1a; /* สีน้ำตาล sienna ให้เข้าธีม */
+  font-weight: 600;
+  box-shadow: inset 4px 4px 12px #c5c5c5, inset -4px -4px 12px #ffffff;
+}
+
+.main-tab:focus-visible {
+  outline: 2px solid #5d2a1a;
+  outline-offset: 3px;
+}
+
+/* Responsive: Mobile (<640px) */
+@media (max-width: 639.98px) {
+  .main-tabs-bar {
+    padding: 12px 14px;
+  }
+
+  .main-tabs-nav {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 12px;
+    padding: 6px 4px 8px 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .main-tabs-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .main-tab {
+    flex: 0 0 auto;
+    min-width: 220px;
+    max-width: 280px;
+    scroll-snap-align: center;
+    padding: 0.65em 1.1em;
+    font-size: 15px;
+    box-shadow: 4px 4px 8px #c5c5c5, -4px -4px 8px #ffffff;
+  }
+
+  .main-tab:active,
+  .main-tab.is-active,
+  .main-tab[aria-selected="true"] {
+    box-shadow: inset 3px 3px 8px #c5c5c5, inset -3px -3px 8px #ffffff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-tab {
+    transition: none !important;
+  }
+}
+
+
+
+
+
+
+
+
